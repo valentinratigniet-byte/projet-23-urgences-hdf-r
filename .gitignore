@@ -1,0 +1,10 @@
+.env
+.Renviron
+.Rhistory
+.RData
+.Rproj.user/
+renv/library/
+renv/staging/
+data/raw/
+*_cache/
+*_files/
