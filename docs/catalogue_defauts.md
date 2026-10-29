@@ -4,7 +4,7 @@
 > (`SIM59A`… `SIM80A`), leurs patients et leurs passages sont fictifs. Seul le volume quotidien suit le
 > profil réel 2023 du département (DREES). Générateur : `R/simulation_rpu.R`, graine 2023 (reproductible).
 
-Fichiers : `data/rpu_simule_2023.csv.gz` (165 030 lignes) et `data/rpu_defauts_injectes.csv`
+Fichiers : `data/rpu_simule_2023.csv.gz` (164 251 lignes) et `data/rpu_defauts_injectes.csv`
 (vérité terrain : une ligne par défaut, avec `finess`, `type_defaut`, `id_passage`, `date`).
 Chaque passage porte au plus un défaut, ce qui permet de mesurer exactement ce que détectent les
 contrôles qualité.
@@ -30,4 +30,8 @@ c'est le cas d'école « diagnostic non exploitable ».
 
 Limites connues : le code postal est un préfixe de département suivi de 3 chiffres (format plausible, pas
 vérifié contre un référentiel) ; les diagnostics sont tirés parmi une trentaine de codes courants, sans
-saisonnalité (celle-ci vient des données réelles ODISSE).
+saisonnalité (celle-ci vient des données réelles ODISSE) ; les durées naturelles sont plafonnées à
+48 h, pour qu'un séjour de plus de 72 h soit toujours un défaut injecté.
+
+Contrôle : `tests/testthat/test-qualite.R` vérifie que `detecter_anomalies()` retrouve **exactement**
+ce catalogue, sans défaut manquant ni anomalie en trop.

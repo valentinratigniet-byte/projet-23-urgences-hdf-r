@@ -61,7 +61,9 @@ simuler_etablissement <- function(etab, profil) {
   mode_sortie[stats::runif(n) < 0.03 & mode_sortie == "8"] <- "7"
   mode_sortie[ccmu == "D" | (ccmu == "5" & stats::runif(n) < 0.2)] <- "9"
 
-  duree_min <- stats::rlnorm(n, log(170), 0.7) * ifelse(age >= 75, 1.5, 1) * ifelse(mode_sortie == "6", 1.6, 1)
+  # Plafond 48 h : au-delà de 72 h, la durée est un défaut injecté (duree_aberrante), jamais naturelle.
+  duree_min <- pmin(stats::rlnorm(n, log(170), 0.7) * ifelse(age >= 75, 1.5, 1) * ifelse(mode_sortie == "6", 1.6, 1),
+                    48 * 60)
 
   tibble::tibble(
     finess = etab$finess, etablissement = etab$etablissement, dep = etab$dep,
@@ -79,16 +81,14 @@ simuler_etablissement <- function(etab, profil) {
 injecter_defauts <- function(rpu, etab) {
   taux <- TAUX_DEFAUTS * FACTEUR_QUALITE[[etab$qualite]]
   if (etab$finess %in% names(DP_VIDE_SPECIFIQUE)) taux[["dp_vide"]] <- DP_VIDE_SPECIFIQUE[[etab$finess]]
-  n_defaut <- stats::rbinom(length(taux), nrow(rpu), taux)
+  n_defaut <- stats::setNames(stats::rbinom(length(taux), nrow(rpu), taux), names(taux))
   # deces_ccmu1 ne peut toucher qu'un passage CCMU 1 : on le tire parmi eux, les autres ailleurs.
-  ccmu1 <- sample(which(rpu$ccmu == "1"), n_defaut[names(taux) == "deces_ccmu1"])
-  autres <- sample(setdiff(seq_len(nrow(rpu)), ccmu1))
-  cibles <- split(c(autres, ccmu1)[seq_len(sum(n_defaut))],
-                  factor(rep(c(setdiff(names(taux), "deces_ccmu1"), "deces_ccmu1"),
-                             c(n_defaut[names(taux) != "deces_ccmu1"], n_defaut[names(taux) == "deces_ccmu1"])),
-                         levels = names(taux)))
+  ccmu1 <- sample(which(rpu$ccmu == "1"), n_defaut[["deces_ccmu1"]])
+  autres_types <- setdiff(names(taux), "deces_ccmu1")
+  autres <- sample(setdiff(seq_len(nrow(rpu)), ccmu1), sum(n_defaut[autres_types]))
+  i <- c(split(autres, factor(rep(autres_types, n_defaut[autres_types]), levels = autres_types)),
+         list(deces_ccmu1 = ccmu1))
 
-  i <- cibles
   rpu$dp[i$dp_vide] <- NA
   rpu$ccmu[i$ccmu_vide] <- NA
   rpu$mode_sortie[i$mode_sortie_vide] <- NA
