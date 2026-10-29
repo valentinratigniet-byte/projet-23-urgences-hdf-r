@@ -21,18 +21,6 @@ e <- ind[ind$finess == f, ]
 a_etab <- anomalies[anomalies$finess == f, ]
 rang <- which(rev(ind$finess) == f)   # 1 = meilleur score
 
-LIBELLES <- c(
-  dp_vide = "Diagnostic principal vide", ccmu_vide = "Gravité CCMU vide",
-  mode_sortie_vide = "Mode de sortie vide", code_postal_vide = "Code postal vide",
-  destination_vide = "Destination vide pour un patient hospitalisé",
-  dp_invalide = "Diagnostic hors format CIM-10", sortie_avant_entree = "Sortie avant l'entrée",
-  duree_aberrante = "Séjour de plus de 72 h",
-  age_aberrant = "Date de naissance impossible (après l'entrée ou plus de 120 ans)",
-  sexe_invalide = "Sexe hors nomenclature (M, F, I, X)", deces_ccmu1 = "Décès d'un patient classé CCMU 1",
-  provenance_incoherente = "Provenance contraire au mode d'entrée",
-  orientation_incoherente = "Orientation contraire au mode de sortie",
-  doublon = "Passage transmis deux fois", trou_transmission = "Jour sans aucun passage transmis"
-)
 CONSEILS <- c(
   dp_vide = "Rendre le DP obligatoire à la clôture du dossier ; vérifier le paramétrage du logiciel des urgences.",
   ccmu_vide = "Saisir la CCMU dès l'accueil infirmier d'orientation (IOA).",

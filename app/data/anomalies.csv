@@ -1,113 +1,113 @@
-finess,type_defaut,n,dimension
-SIM02A,age_aberrant,4,Cohérence
-SIM02A,ccmu_vide,75,Complétude
-SIM02A,code_postal_vide,66,Complétude
-SIM02A,destination_vide,13,Complétude
-SIM02A,doublon,9,Cohérence
-SIM02A,dp_invalide,35,Exploitabilité du DP
-SIM02A,dp_vide,99,Complétude
-SIM02A,duree_aberrante,5,Cohérence
-SIM02A,mode_sortie_vide,26,Complétude
-SIM02A,orientation_incoherente,7,Cohérence
-SIM02A,provenance_incoherente,8,Cohérence
-SIM02A,sexe_invalide,7,Cohérence
-SIM02A,sortie_avant_entree,13,Cohérence
-SIM59A,age_aberrant,4,Cohérence
-SIM59A,ccmu_vide,130,Complétude
-SIM59A,code_postal_vide,136,Complétude
-SIM59A,deces_ccmu1,3,Cohérence
-SIM59A,destination_vide,30,Complétude
-SIM59A,doublon,24,Cohérence
-SIM59A,dp_invalide,66,Exploitabilité du DP
-SIM59A,dp_vide,187,Complétude
-SIM59A,duree_aberrante,14,Cohérence
-SIM59A,mode_sortie_vide,66,Complétude
-SIM59A,orientation_incoherente,26,Cohérence
-SIM59A,provenance_incoherente,31,Cohérence
-SIM59A,sexe_invalide,16,Cohérence
-SIM59A,sortie_avant_entree,15,Cohérence
-SIM59B,age_aberrant,23,Cohérence
-SIM59B,ccmu_vide,443,Complétude
-SIM59B,code_postal_vide,409,Complétude
-SIM59B,deces_ccmu1,13,Cohérence
-SIM59B,destination_vide,88,Complétude
-SIM59B,doublon,64,Cohérence
-SIM59B,dp_invalide,219,Exploitabilité du DP
-SIM59B,dp_vide,647,Complétude
-SIM59B,duree_aberrante,37,Cohérence
-SIM59B,mode_sortie_vide,210,Complétude
-SIM59B,orientation_incoherente,55,Cohérence
-SIM59B,provenance_incoherente,65,Cohérence
-SIM59B,sexe_invalide,31,Cohérence
-SIM59B,sortie_avant_entree,61,Cohérence
-SIM59C,age_aberrant,31,Cohérence
-SIM59C,ccmu_vide,779,Complétude
-SIM59C,code_postal_vide,769,Complétude
-SIM59C,deces_ccmu1,26,Cohérence
-SIM59C,destination_vide,162,Complétude
-SIM59C,doublon,102,Cohérence
-SIM59C,dp_invalide,372,Exploitabilité du DP
-SIM59C,dp_vide,1163,Complétude
-SIM59C,duree_aberrante,88,Cohérence
-SIM59C,mode_sortie_vide,379,Complétude
-SIM59C,orientation_incoherente,72,Cohérence
-SIM59C,provenance_incoherente,112,Cohérence
-SIM59C,sexe_invalide,79,Cohérence
-SIM59C,sortie_avant_entree,110,Cohérence
-SIM60A,age_aberrant,51,Cohérence
-SIM60A,ccmu_vide,1100,Complétude
-SIM60A,code_postal_vide,1074,Complétude
-SIM60A,deces_ccmu1,35,Cohérence
-SIM60A,destination_vide,209,Complétude
-SIM60A,doublon,169,Cohérence
-SIM60A,dp_invalide,584,Exploitabilité du DP
-SIM60A,dp_vide,6183,Complétude
-SIM60A,duree_aberrante,119,Cohérence
-SIM60A,mode_sortie_vide,567,Complétude
-SIM60A,orientation_incoherente,116,Cohérence
-SIM60A,provenance_incoherente,146,Cohérence
-SIM60A,sexe_invalide,136,Cohérence
-SIM60A,sortie_avant_entree,153,Cohérence
-SIM62A,age_aberrant,25,Cohérence
-SIM62A,ccmu_vide,450,Complétude
-SIM62A,code_postal_vide,500,Complétude
-SIM62A,deces_ccmu1,12,Cohérence
-SIM62A,destination_vide,94,Complétude
-SIM62A,doublon,76,Cohérence
-SIM62A,dp_invalide,237,Exploitabilité du DP
-SIM62A,dp_vide,752,Complétude
-SIM62A,duree_aberrante,55,Cohérence
-SIM62A,mode_sortie_vide,247,Complétude
-SIM62A,orientation_incoherente,44,Cohérence
-SIM62A,provenance_incoherente,78,Cohérence
-SIM62A,sexe_invalide,52,Cohérence
-SIM62A,sortie_avant_entree,54,Cohérence
-SIM62B,age_aberrant,11,Cohérence
-SIM62B,ccmu_vide,257,Complétude
-SIM62B,code_postal_vide,296,Complétude
-SIM62B,deces_ccmu1,6,Cohérence
-SIM62B,destination_vide,61,Complétude
-SIM62B,doublon,48,Cohérence
-SIM62B,dp_invalide,140,Exploitabilité du DP
-SIM62B,dp_vide,399,Complétude
-SIM62B,duree_aberrante,25,Cohérence
-SIM62B,mode_sortie_vide,136,Complétude
-SIM62B,orientation_incoherente,19,Cohérence
-SIM62B,provenance_incoherente,46,Cohérence
-SIM62B,sexe_invalide,26,Cohérence
-SIM62B,sortie_avant_entree,42,Cohérence
-SIM62B,trou_transmission,17,Exhaustivité
-SIM80A,age_aberrant,20,Cohérence
-SIM80A,ccmu_vide,386,Complétude
-SIM80A,code_postal_vide,402,Complétude
-SIM80A,deces_ccmu1,11,Cohérence
-SIM80A,destination_vide,75,Complétude
-SIM80A,doublon,63,Cohérence
-SIM80A,dp_invalide,191,Exploitabilité du DP
-SIM80A,dp_vide,596,Complétude
-SIM80A,duree_aberrante,38,Cohérence
-SIM80A,mode_sortie_vide,200,Complétude
-SIM80A,orientation_incoherente,47,Cohérence
-SIM80A,provenance_incoherente,59,Cohérence
-SIM80A,sexe_invalide,42,Cohérence
-SIM80A,sortie_avant_entree,56,Cohérence
+finess,type_defaut,n,dimension,libelle
+SIM02A,age_aberrant,4,Cohérence,Date de naissance impossible (après l'entrée ou plus de 120 ans)
+SIM02A,ccmu_vide,75,Complétude,Gravité CCMU vide
+SIM02A,code_postal_vide,66,Complétude,Code postal vide
+SIM02A,destination_vide,13,Complétude,Destination vide pour un patient hospitalisé
+SIM02A,doublon,9,Cohérence,Passage transmis deux fois
+SIM02A,dp_invalide,35,Exploitabilité du DP,Diagnostic hors format CIM-10
+SIM02A,dp_vide,99,Complétude,Diagnostic principal vide
+SIM02A,duree_aberrante,5,Cohérence,Séjour de plus de 72 h
+SIM02A,mode_sortie_vide,26,Complétude,Mode de sortie vide
+SIM02A,orientation_incoherente,7,Cohérence,Orientation contraire au mode de sortie
+SIM02A,provenance_incoherente,8,Cohérence,Provenance contraire au mode d'entrée
+SIM02A,sexe_invalide,7,Cohérence,"Sexe hors nomenclature (M, F, I, X)"
+SIM02A,sortie_avant_entree,13,Cohérence,Sortie avant l'entrée
+SIM59A,age_aberrant,4,Cohérence,Date de naissance impossible (après l'entrée ou plus de 120 ans)
+SIM59A,ccmu_vide,130,Complétude,Gravité CCMU vide
+SIM59A,code_postal_vide,136,Complétude,Code postal vide
+SIM59A,deces_ccmu1,3,Cohérence,Décès d'un patient classé CCMU 1
+SIM59A,destination_vide,30,Complétude,Destination vide pour un patient hospitalisé
+SIM59A,doublon,24,Cohérence,Passage transmis deux fois
+SIM59A,dp_invalide,66,Exploitabilité du DP,Diagnostic hors format CIM-10
+SIM59A,dp_vide,187,Complétude,Diagnostic principal vide
+SIM59A,duree_aberrante,14,Cohérence,Séjour de plus de 72 h
+SIM59A,mode_sortie_vide,66,Complétude,Mode de sortie vide
+SIM59A,orientation_incoherente,26,Cohérence,Orientation contraire au mode de sortie
+SIM59A,provenance_incoherente,31,Cohérence,Provenance contraire au mode d'entrée
+SIM59A,sexe_invalide,16,Cohérence,"Sexe hors nomenclature (M, F, I, X)"
+SIM59A,sortie_avant_entree,15,Cohérence,Sortie avant l'entrée
+SIM59B,age_aberrant,23,Cohérence,Date de naissance impossible (après l'entrée ou plus de 120 ans)
+SIM59B,ccmu_vide,443,Complétude,Gravité CCMU vide
+SIM59B,code_postal_vide,409,Complétude,Code postal vide
+SIM59B,deces_ccmu1,13,Cohérence,Décès d'un patient classé CCMU 1
+SIM59B,destination_vide,88,Complétude,Destination vide pour un patient hospitalisé
+SIM59B,doublon,64,Cohérence,Passage transmis deux fois
+SIM59B,dp_invalide,219,Exploitabilité du DP,Diagnostic hors format CIM-10
+SIM59B,dp_vide,647,Complétude,Diagnostic principal vide
+SIM59B,duree_aberrante,37,Cohérence,Séjour de plus de 72 h
+SIM59B,mode_sortie_vide,210,Complétude,Mode de sortie vide
+SIM59B,orientation_incoherente,55,Cohérence,Orientation contraire au mode de sortie
+SIM59B,provenance_incoherente,65,Cohérence,Provenance contraire au mode d'entrée
+SIM59B,sexe_invalide,31,Cohérence,"Sexe hors nomenclature (M, F, I, X)"
+SIM59B,sortie_avant_entree,61,Cohérence,Sortie avant l'entrée
+SIM59C,age_aberrant,31,Cohérence,Date de naissance impossible (après l'entrée ou plus de 120 ans)
+SIM59C,ccmu_vide,779,Complétude,Gravité CCMU vide
+SIM59C,code_postal_vide,769,Complétude,Code postal vide
+SIM59C,deces_ccmu1,26,Cohérence,Décès d'un patient classé CCMU 1
+SIM59C,destination_vide,162,Complétude,Destination vide pour un patient hospitalisé
+SIM59C,doublon,102,Cohérence,Passage transmis deux fois
+SIM59C,dp_invalide,372,Exploitabilité du DP,Diagnostic hors format CIM-10
+SIM59C,dp_vide,1163,Complétude,Diagnostic principal vide
+SIM59C,duree_aberrante,88,Cohérence,Séjour de plus de 72 h
+SIM59C,mode_sortie_vide,379,Complétude,Mode de sortie vide
+SIM59C,orientation_incoherente,72,Cohérence,Orientation contraire au mode de sortie
+SIM59C,provenance_incoherente,112,Cohérence,Provenance contraire au mode d'entrée
+SIM59C,sexe_invalide,79,Cohérence,"Sexe hors nomenclature (M, F, I, X)"
+SIM59C,sortie_avant_entree,110,Cohérence,Sortie avant l'entrée
+SIM60A,age_aberrant,51,Cohérence,Date de naissance impossible (après l'entrée ou plus de 120 ans)
+SIM60A,ccmu_vide,1100,Complétude,Gravité CCMU vide
+SIM60A,code_postal_vide,1074,Complétude,Code postal vide
+SIM60A,deces_ccmu1,35,Cohérence,Décès d'un patient classé CCMU 1
+SIM60A,destination_vide,209,Complétude,Destination vide pour un patient hospitalisé
+SIM60A,doublon,169,Cohérence,Passage transmis deux fois
+SIM60A,dp_invalide,584,Exploitabilité du DP,Diagnostic hors format CIM-10
+SIM60A,dp_vide,6183,Complétude,Diagnostic principal vide
+SIM60A,duree_aberrante,119,Cohérence,Séjour de plus de 72 h
+SIM60A,mode_sortie_vide,567,Complétude,Mode de sortie vide
+SIM60A,orientation_incoherente,116,Cohérence,Orientation contraire au mode de sortie
+SIM60A,provenance_incoherente,146,Cohérence,Provenance contraire au mode d'entrée
+SIM60A,sexe_invalide,136,Cohérence,"Sexe hors nomenclature (M, F, I, X)"
+SIM60A,sortie_avant_entree,153,Cohérence,Sortie avant l'entrée
+SIM62A,age_aberrant,25,Cohérence,Date de naissance impossible (après l'entrée ou plus de 120 ans)
+SIM62A,ccmu_vide,450,Complétude,Gravité CCMU vide
+SIM62A,code_postal_vide,500,Complétude,Code postal vide
+SIM62A,deces_ccmu1,12,Cohérence,Décès d'un patient classé CCMU 1
+SIM62A,destination_vide,94,Complétude,Destination vide pour un patient hospitalisé
+SIM62A,doublon,76,Cohérence,Passage transmis deux fois
+SIM62A,dp_invalide,237,Exploitabilité du DP,Diagnostic hors format CIM-10
+SIM62A,dp_vide,752,Complétude,Diagnostic principal vide
+SIM62A,duree_aberrante,55,Cohérence,Séjour de plus de 72 h
+SIM62A,mode_sortie_vide,247,Complétude,Mode de sortie vide
+SIM62A,orientation_incoherente,44,Cohérence,Orientation contraire au mode de sortie
+SIM62A,provenance_incoherente,78,Cohérence,Provenance contraire au mode d'entrée
+SIM62A,sexe_invalide,52,Cohérence,"Sexe hors nomenclature (M, F, I, X)"
+SIM62A,sortie_avant_entree,54,Cohérence,Sortie avant l'entrée
+SIM62B,age_aberrant,11,Cohérence,Date de naissance impossible (après l'entrée ou plus de 120 ans)
+SIM62B,ccmu_vide,257,Complétude,Gravité CCMU vide
+SIM62B,code_postal_vide,296,Complétude,Code postal vide
+SIM62B,deces_ccmu1,6,Cohérence,Décès d'un patient classé CCMU 1
+SIM62B,destination_vide,61,Complétude,Destination vide pour un patient hospitalisé
+SIM62B,doublon,48,Cohérence,Passage transmis deux fois
+SIM62B,dp_invalide,140,Exploitabilité du DP,Diagnostic hors format CIM-10
+SIM62B,dp_vide,399,Complétude,Diagnostic principal vide
+SIM62B,duree_aberrante,25,Cohérence,Séjour de plus de 72 h
+SIM62B,mode_sortie_vide,136,Complétude,Mode de sortie vide
+SIM62B,orientation_incoherente,19,Cohérence,Orientation contraire au mode de sortie
+SIM62B,provenance_incoherente,46,Cohérence,Provenance contraire au mode d'entrée
+SIM62B,sexe_invalide,26,Cohérence,"Sexe hors nomenclature (M, F, I, X)"
+SIM62B,sortie_avant_entree,42,Cohérence,Sortie avant l'entrée
+SIM62B,trou_transmission,17,Exhaustivité,Jour sans aucun passage transmis
+SIM80A,age_aberrant,20,Cohérence,Date de naissance impossible (après l'entrée ou plus de 120 ans)
+SIM80A,ccmu_vide,386,Complétude,Gravité CCMU vide
+SIM80A,code_postal_vide,402,Complétude,Code postal vide
+SIM80A,deces_ccmu1,11,Cohérence,Décès d'un patient classé CCMU 1
+SIM80A,destination_vide,75,Complétude,Destination vide pour un patient hospitalisé
+SIM80A,doublon,63,Cohérence,Passage transmis deux fois
+SIM80A,dp_invalide,191,Exploitabilité du DP,Diagnostic hors format CIM-10
+SIM80A,dp_vide,596,Complétude,Diagnostic principal vide
+SIM80A,duree_aberrante,38,Cohérence,Séjour de plus de 72 h
+SIM80A,mode_sortie_vide,200,Complétude,Mode de sortie vide
+SIM80A,orientation_incoherente,47,Cohérence,Orientation contraire au mode de sortie
+SIM80A,provenance_incoherente,59,Cohérence,Provenance contraire au mode d'entrée
+SIM80A,sexe_invalide,42,Cohérence,"Sexe hors nomenclature (M, F, I, X)"
+SIM80A,sortie_avant_entree,56,Cohérence,Sortie avant l'entrée

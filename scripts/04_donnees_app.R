@@ -25,7 +25,8 @@ anomalies <- detecter_anomalies(rpu)
 ecrire(indicateurs_qualite(rpu, anomalies) |>
          dplyr::select(finess, etablissement, passages, exhaustivite, completude, coherence, exploitabilite_dp, score),
        "qualite.csv")
-ecrire(dplyr::count(anomalies, finess, type_defaut) |> dplyr::mutate(dimension = DIMENSIONS[type_defaut]), "anomalies.csv")
+ecrire(dplyr::count(anomalies, finess, type_defaut) |>
+         dplyr::mutate(dimension = DIMENSIONS[type_defaut], libelle = LIBELLES[type_defaut]), "anomalies.csv")
 r <- rpu[!duplicated(rpu), ]
 ecrire(dplyr::count(r, finess, date = as.Date(entree, tz = "Europe/Paris")), "transmis_par_jour.csv")
 ecrire(indicateurs_activite_rpu(rpu, anomalies) |>

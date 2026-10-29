@@ -33,13 +33,13 @@ ui <- navbarPage(
                   "volet qualité RPU sur un extrait simulé."),
   tabPanel("Activité",
     sidebarLayout(
-      sidebarPanel(width = 3,
+      sidebarPanel(width = 4,
         checkboxGroupInput("deps", "Départements", choices = DEPS, selected = c("59", "62", "FR")),
         dateRangeInput("periode", "Période", start = "2017-01-01", end = "2023-12-31",
-                       min = "2017-01-01", max = "2023-12-31", language = "fr", separator = "au"),
-        radioButtons("echelle", "Afficher", c("Passages par jour (moyenne 7 jours)" = "volume",
-                                               "Indice, moyenne 2019 = 100" = "indice"))),
-      mainPanel(width = 9, plotOutput("courbe", height = "380px"), h4("Passages pour 10 000 habitants"),
+                       min = "2017-01-01", max = "2023-12-31", format = "dd/mm/yyyy", language = "fr", separator = "au"),
+        radioButtons("echelle", "Afficher", c("Indice, moyenne 2019 = 100" = "indice",
+                                               "Passages par jour (moyenne 7 jours)" = "volume"))),
+      mainPanel(width = 8, plotOutput("courbe", height = "380px"), h4("Passages pour 10 000 habitants"),
                 tableOutput("taux")))),
   tabPanel("Services SAE 2023",
     sidebarLayout(
@@ -100,7 +100,7 @@ server <- function(input, output, session) {
     d <- services()
     data.frame(Département = NOMS[d$dep], Établissement = d$etablissement,
                Service = ifelse(d$type == "PED", "pédiatrique", "général"), Passages = nb(d$PASSU),
-               `80 ans et +` = pct(d$part_80), Hospitalisés = pct(d$taux_hospit), check.names = FALSE)
+               `80 ans et +` = ifelse(d$type == "PED", "sans objet", pct(d$part_80)), Hospitalisés = pct(d$taux_hospit), check.names = FALSE)
   })
 
   output$scores <- renderUI({
@@ -125,7 +125,7 @@ server <- function(input, output, session) {
   output$anomalies <- renderTable({
     d <- anomalies[anomalies$finess == input$etab, ]
     d <- d[order(-d$n), ]
-    data.frame(Anomalie = d$type_defaut, Dimension = d$dimension, Nombre = nb(d$n))
+    data.frame(Anomalie = d$libelle, Dimension = d$dimension, Nombre = nb(d$n))
   })
 }
 

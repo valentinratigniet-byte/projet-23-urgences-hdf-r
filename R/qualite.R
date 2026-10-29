@@ -20,6 +20,20 @@ DIMENSIONS <- c(
   trou_transmission = "Exhaustivité"
 )
 
+# Libellés lisibles des anomalies (rapports qualité et application).
+LIBELLES <- c(
+  dp_vide = "Diagnostic principal vide", ccmu_vide = "Gravité CCMU vide",
+  mode_sortie_vide = "Mode de sortie vide", code_postal_vide = "Code postal vide",
+  destination_vide = "Destination vide pour un patient hospitalisé",
+  dp_invalide = "Diagnostic hors format CIM-10", sortie_avant_entree = "Sortie avant l'entrée",
+  duree_aberrante = "Séjour de plus de 72 h",
+  age_aberrant = "Date de naissance impossible (après l'entrée ou plus de 120 ans)",
+  sexe_invalide = "Sexe hors nomenclature (M, F, I, X)", deces_ccmu1 = "Décès d'un patient classé CCMU 1",
+  provenance_incoherente = "Provenance contraire au mode d'entrée",
+  orientation_incoherente = "Orientation contraire au mode de sortie",
+  doublon = "Passage transmis deux fois", trou_transmission = "Jour sans aucun passage transmis"
+)
+
 lire_rpu <- function(fichier) {
   r <- readr::read_csv(fichier, col_types = readr::cols(.default = "c"), na = "")
   r$entree <- as.POSIXct(r$entree, tz = "Europe/Paris")
