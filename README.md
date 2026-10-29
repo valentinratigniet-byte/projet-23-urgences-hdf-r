@@ -61,6 +61,28 @@ glisser des passages du 31 décembre au 1er janvier 2024.
 | SIM62B | 97,0 | 17 jours non transmis (objectif d'exhaustivité : 100 %) |
 | SIM59A | 99,7 | meilleur score |
 
+## Architecture
+
+**[Ouvrir le schéma interactif](https://valentinratigniet-byte.github.io/projet-23-urgences-hdf-r/architecture.html)** (zoom, recherche, suivi des flux, export PNG/SVG ; chaque bloc renvoie aux lignes de code). Généré avec [Archify](https://github.com/tt-a1i/archify) depuis [`docs/architecture.archify.json`](docs/architecture.archify.json).
+
+```mermaid
+flowchart LR
+    DREES[("DREES<br/>passages/jour")] --> DON["R/donnees.R<br/>contrôles d'entrée"]
+    ODISSE[("ODISSE<br/>épidémies")] --> DON
+    DON --> REEL[("data/ réelles")]
+    REEL -- profil 2023 --> SIM["R/simulation_rpu.R<br/>graine fixe"]
+    SIM --> RPU[("extrait RPU simulé")]
+    SIM --> CAT[("catalogue des défauts")]
+    REEL --> IND["R/indicateurs.R"]
+    RPU --> QUA["R/qualite.R<br/>12 contrôles"]
+    QUA --> TST{{"testthat<br/>38 tests"}}
+    CAT -- vérité terrain --> TST
+    IND --> RAP["Rapports R Markdown<br/>16 pages + PDF"]
+    QUA --> RAP
+    TST --> CI["CI + GitHub Pages"]
+    RAP --> CI
+```
+
 ## Structure
 
 ```

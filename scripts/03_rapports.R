@@ -16,6 +16,7 @@ tous <- length(args) == 0
 
 dir.create("site", showWarnings = FALSE)
 file.copy("rapports/index.html", "site/index.html", overwrite = TRUE)
+file.copy("docs/architecture.html", "site/architecture.html", overwrite = TRUE)
 
 if (tous || "panorama" %in% args) rendre("panorama.Rmd", "panorama.html")
 if (tous || "departement" %in% args) {

@@ -9,3 +9,6 @@ data/raw/
 *_cache/
 *_files/
 site/
+.archify/
+docs/architecture.*.json
+!docs/architecture.archify.json
