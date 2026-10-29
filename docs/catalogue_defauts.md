@@ -4,7 +4,7 @@
 > (`SIM59A`… `SIM80A`), leurs patients et leurs passages sont fictifs. Seul le volume quotidien suit le
 > profil réel 2023 du département (DREES). Générateur : `R/simulation_rpu.R`, graine 2023 (reproductible).
 
-Fichiers : `data/rpu_simule_2023.csv.gz` (164 251 lignes) et `data/rpu_defauts_injectes.csv`
+Fichiers : `data/rpu_simule_2023.csv.gz` (164 252 lignes) et `data/rpu_defauts_injectes.csv`
 (vérité terrain : une ligne par défaut, avec `finess`, `type_defaut`, `id_passage`, `date`).
 Chaque passage porte au plus un défaut, ce qui permet de mesurer exactement ce que détectent les
 contrôles qualité.

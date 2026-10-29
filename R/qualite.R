@@ -3,7 +3,8 @@
 
 FORMAT_CIM10 <- "^[A-Z][0-9]{2}[0-9]{0,2}$"   # format RPU : sans point, 3 à 5 caractères
 SEXES_VALIDES <- c("M", "F", "I")
-OBJECTIF_QUALITE <- 0.95                        # seuil retenu pour ce projet (pas une norme officielle)
+# Seuils retenus pour ce projet (pas une norme officielle) : tout jour non transmis est une perte sèche.
+OBJECTIFS <- c(exhaustivite = 1, completude = 0.95, coherence = 0.95, exploitabilite_dp = 0.95)
 
 DIMENSIONS <- c(
   dp_vide = "Complétude", ccmu_vide = "Complétude", mode_sortie_vide = "Complétude",
@@ -85,10 +86,12 @@ indicateurs_qualite <- function(rpu, anomalies, debut = as.Date("2023-01-01"), f
     dplyr::arrange(score)
 }
 
-# Les n anomalies les plus fréquentes d'un établissement, à traiter en priorité.
+# Les n anomalies à traiter en priorité : les jours non transmis d'abord (toutes les données du jour
+# sont perdues), puis les plus fréquentes.
 actions_prioritaires <- function(anomalies, finess_cible, n = 3) {
   anomalies[anomalies$finess == finess_cible, ] |>
-    dplyr::count(type_defaut, sort = TRUE) |>
+    dplyr::count(type_defaut) |>
+    dplyr::arrange(type_defaut != "trou_transmission", dplyr::desc(n)) |>
     dplyr::mutate(dimension = DIMENSIONS[type_defaut]) |>
     utils::head(n)
 }

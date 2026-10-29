@@ -45,7 +45,8 @@ simuler_etablissement <- function(etab, profil) {
 
   heure <- sample(0:23, n, replace = TRUE,
                   prob = c(2, 1.5, 1, 1, 1, 1.5, 2, 3, 5, 7, 8, 8, 7, 7, 7, 7, 7, 7, 7, 6, 5, 4, 3, 2.5))
-  entree <- as.POSIXct(rep(p$date, n_jour), tz = "Europe/Paris") +
+  # format() d'abord : as.POSIXct(<Date>) donnerait minuit UTC, soit 1 h ou 2 h du matin à Paris.
+  entree <- as.POSIXct(format(rep(p$date, n_jour)), tz = "Europe/Paris") +
     heure * 3600 + sample(0:3599, n, replace = TRUE)
 
   age <- c(sample(0:14, n, TRUE), sample(15:74, n, TRUE), sample(75:100, n, TRUE))

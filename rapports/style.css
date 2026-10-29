@@ -1,0 +1,13 @@
+body { font-family: "Segoe UI", system-ui, sans-serif; color: #0b0b0b; background: #fcfcfb; line-height: 1.55; }
+.main-container { max-width: 980px; }
+h1.title { font-size: 1.9em; font-weight: 700; margin-top: 1em; }
+h2 { font-size: 1.35em; margin-top: 1.8em; border-bottom: 2px solid #e6e5e1; padding-bottom: .25em; }
+h3 { font-size: 1.1em; }
+.subtitle, .author, .date { color: #52514e; font-size: 1em; }
+.avertissement { background: #fff7e6; border-left: 4px solid #eda100; padding: .7em 1em; margin: 1em 0; font-size: .95em; }
+.chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 1.2em 0; }
+.chiffre { background: #f3f3f1; border-radius: 6px; padding: .8em 1em; }
+.chiffre .valeur { font-size: 1.7em; font-weight: 700; display: block; font-variant-numeric: tabular-nums; }
+.chiffre .libelle { color: #52514e; font-size: .9em; }
+.statut-ok { color: #1e7b3a; font-weight: 600; }
+.statut-ko { color: #b3261e; font-weight: 600; }

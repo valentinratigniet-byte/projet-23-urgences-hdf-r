@@ -1,0 +1,93 @@
+---
+title: "Note : activité des urgences en Hauts-de-France"
+output:
+  html_document:
+    css: style.css
+    self_contained: true
+    section_divs: false
+---
+
+```{r setup, include=FALSE}
+source("rapports/_commun.R", encoding = "UTF-8")
+knitr::opts_chunk$set(fig.width = 7.4, fig.height = 2.3, dpi = 150)
+hdf <- passages |> dplyr::filter(dep != "FR")
+region <- hdf |> dplyr::summarise(nb_passages = sum(nb_passages), .by = date) |>
+  dplyr::mutate(dep = "HDF", libelle_dep = "Hauts-de-France")
+annuel <- passages_annuels(dplyr::bind_rows(passages, region))
+a <- \(x, an) annuel$passages[annuel$dep == x & annuel$annee == an]
+evol <- sapply(c("02", "59", "60", "62", "80", "HDF", "FR"), \(x) a(x, 2023) / a(x, 2019) - 1)
+hausse <- names(which.max(evol[1:5])); baisse <- names(which.min(evol[1:5]))
+jours <- indice_jour_semaine(region)
+lundi <- jours$indice[jours$jour == "lundi"] - 1
+n_lundis <- sum(lubridate::wday(utils::head(jours_pic(region, q = 0.995), 10)$date, week_start = 1) == 1)
+
+rpu <- lire_rpu("data/rpu_simule_2023.csv.gz")
+ind <- indicateurs_qualite(rpu, detecter_anomalies(rpu))
+dims <- names(OBJECTIFS)
+sous_objectif <- ind[rowSums(sweep(as.matrix(ind[dims]), 2, OBJECTIFS, `<`)) > 0, ]
+pire <- ind[1, ]
+```
+
+<style>
+@page { size: A4; margin: 14mm 15mm; }
+body { font-size: 10.5pt; line-height: 1.42; }
+.main-container { max-width: 180mm; }
+h1.title { font-size: 17pt; margin: 0 0 2px; }
+h2 { font-size: 12pt; margin: 12px 0 5px; padding-bottom: 2px; }
+p, li { margin: 0 0 4px; }
+.entete { color: #52514e; font-size: 9pt; margin-bottom: 8px; }
+.constat { border-left: 3px solid #2a78d6; padding: 2px 0 2px 9px; margin: 6px 0; }
+.constat b.fort { font-size: 12.5pt; }
+.avertissement { font-size: 9pt; padding: 5px 9px; margin: 6px 0; }
+img { max-width: 100%; }
+</style>
+
+<div class="entete">Projet de portfolio (Valentin Ratigniet), sans lien avec un organisme officiel · données DREES 2017-2023 et Santé publique France ·
+rédigée à partir des rapports du projet (panorama, départements, qualité)</div>
+
+## Trois constats
+
+<div class="constat"><b class="fort">`r nb(a("HDF", 2023) / 1e6, 0.01)` million de passages en 2023</b>,
+soit `r nb(a("HDF", 2023) / 365)` par jour. L'activité n'a pas retrouvé son niveau d'avant-crise :
+`r pct(evol[["HDF"]], signe = TRUE)` par rapport à 2019 (France : `r pct(evol[["FR"]], signe = TRUE)`),
+après une chute de `r pct(abs(a("HDF", 2020) / a("HDF", 2019) - 1), 1)` en 2020.</div>
+
+<div class="constat"><b class="fort">Des trajectoires opposées selon les départements.</b>
+`r NOMS_DEP[[hausse]]` : `r pct(evol[[hausse]], signe = TRUE)` depuis 2019, seul département au-dessus de
+son niveau d'avant-crise ; `r NOMS_DEP[[baisse]]` : `r pct(evol[[baisse]], signe = TRUE)`. Une moyenne
+régionale masque ces écarts, qui comptent pour l'allocation des moyens.</div>
+
+<div class="constat"><b class="fort">Le lundi pèse `r pct(lundi, 1, signe = TRUE)`</b> par rapport à
+une journée moyenne, et `r n_lundis` des 10 journées les plus chargées de 2017-2023 sont des lundis.
+Le planning des équipes doit suivre ce profil plutôt qu'un effectif constant.</div>
+
+```{r graphique}
+indice <- annuel |> dplyr::filter(dep != "HDF") |>
+  dplyr::mutate(indice = 100 * passages / passages[annee == 2019], .by = dep)
+ggplot(indice, aes(annee, indice, colour = dep)) +
+  geom_hline(yintercept = 100, colour = "#c9c8c3", linewidth = 0.3) +
+  geom_line(aes(linetype = dep == "FR"), linewidth = 0.6, show.legend = FALSE) +
+  geom_point(size = 1.6) +
+  scale_colour_manual(values = COULEURS_DEP, labels = NOMS_DEP, name = NULL) +
+  scale_linetype_manual(values = c(`FALSE` = "solid", `TRUE` = "22")) +
+  scale_x_continuous(breaks = 2017:2023) +
+  labs(title = "Passages annuels, indice base 100 en 2019", x = NULL, y = NULL, caption = SOURCE_DREES) +
+  theme(legend.position = "right", plot.title = element_text(size = 10))
+```
+
+## Une limite
+
+Les volumes journaliers sont des **estimations** de la DREES (RPU calés sur les totaux annuels de la SAE) :
+ils sont solides pour les tendances et les profils, pas pour juger une journée isolée. Les comparaisons
+entre départements ne rapportent pas les passages à la population.
+
+## Une recommandation
+
+Fiabiliser la donnée à la source avant d'élargir les indicateurs : sur l'extrait de démonstration,
+`r nrow(sous_objectif)` établissements sur `r nrow(ind)` n'atteignent pas au moins un objectif de qualité, et le
+diagnostic principal n'est exploitable que pour `r pct(pire$exploitabilite_dp, 1)` des passages
+chez le moins bon (`r pire$finess`). Un retour trimestriel par établissement, assorti de trois actions
+prioritaires, est déjà produit automatiquement.
+
+<div class="avertissement">La partie qualité repose sur un <b>extrait RPU simulé</b> (8 établissements
+fictifs) : les RPU réels sont confidentiels. Elle illustre la méthode, pas la situation réelle des établissements.</div>

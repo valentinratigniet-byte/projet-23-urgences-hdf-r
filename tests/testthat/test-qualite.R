@@ -79,3 +79,16 @@ test_that("le score classe les établissements selon leur qualité simulée", {
   expect_true(all(c("SIM59A", "SIM02A") %in% utils::tail(ind$finess, 2)))  # profils « bonne »
   expect_lt(ind$exhaustivite[ind$finess == "SIM62B"], 1)
 })
+
+test_that("toutes les entrées simulées tombent en 2023, heure de Paris", {
+  rpu <- lire_rpu(test_path("../../data/rpu_simule_2023.csv.gz"))
+  jours <- as.Date(rpu$entree, tz = "Europe/Paris")
+  expect_true(all(jours >= as.Date("2023-01-01") & jours <= as.Date("2023-12-31")))
+  expect_true(any(format(rpu$entree, "%H") == "00"))   # des arrivées entre minuit et 1 h existent
+})
+
+test_that("les jours non transmis passent en tête des actions prioritaires", {
+  a <- tibble::tibble(finess = "X", type_defaut = c(rep("dp_vide", 50), "trou_transmission"),
+                      id_passage = NA_character_, date = as.Date("2023-01-01"))
+  expect_identical(actions_prioritaires(a, "X")$type_defaut, c("trou_transmission", "dp_vide"))
+})

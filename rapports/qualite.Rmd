@@ -1,0 +1,180 @@
+---
+title: "Qualité des données RPU : `r params$finess`"
+subtitle: "Retour à l'établissement, année 2023 (données simulées)"
+params:
+  finess: "SIM60A"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    css: style.css
+    self_contained: true
+---
+
+```{r setup, include=FALSE}
+source("rapports/_commun.R", encoding = "UTF-8")
+f <- params$finess
+rpu <- lire_rpu("data/rpu_simule_2023.csv.gz")
+anomalies <- detecter_anomalies(rpu)
+ind <- indicateurs_qualite(rpu, anomalies)
+e <- ind[ind$finess == f, ]
+a_etab <- anomalies[anomalies$finess == f, ]
+rang <- which(rev(ind$finess) == f)   # 1 = meilleur score
+
+LIBELLES <- c(
+  dp_vide = "Diagnostic principal vide", ccmu_vide = "Gravité CCMU vide",
+  mode_sortie_vide = "Mode de sortie vide", code_postal_vide = "Code postal vide",
+  dp_invalide = "Diagnostic hors format CIM-10", sortie_avant_entree = "Sortie avant l'entrée",
+  duree_aberrante = "Séjour de plus de 72 h", age_aberrant = "Âge hors 0-120 ans",
+  sexe_invalide = "Sexe hors nomenclature (M, F, I)", deces_ccmu1 = "Décès d'un patient classé CCMU 1",
+  doublon = "Passage transmis deux fois", trou_transmission = "Jour sans aucun passage transmis"
+)
+CONSEILS <- c(
+  dp_vide = "Rendre le DP obligatoire à la clôture du dossier ; vérifier le paramétrage du logiciel des urgences.",
+  ccmu_vide = "Saisir la CCMU dès l'accueil infirmier d'orientation (IOA).",
+  mode_sortie_vide = "Bloquer la clôture du passage sans mode de sortie.",
+  code_postal_vide = "Reprendre l'adresse depuis le dossier administratif (identito-vigilance).",
+  dp_invalide = "Imposer la sélection du DP dans le thésaurus CIM-10 plutôt qu'en texte libre.",
+  sortie_avant_entree = "Contrôler l'horodatage à la clôture ; vérifier les dossiers saisis a posteriori.",
+  duree_aberrante = "Clôturer les dossiers restés ouverts (patients sortis non enregistrés).",
+  age_aberrant = "Contrôler la date de naissance à l'enregistrement.",
+  sexe_invalide = "Aligner la nomenclature du logiciel sur celle du RPU (M, F, I).",
+  deces_ccmu1 = "Revoir la cotation : un décès est incompatible avec une CCMU 1.",
+  doublon = "Vérifier le circuit d'envoi : un même passage ne doit être transmis qu'une fois.",
+  trou_transmission = "Mettre en place une alerte quand un jour n'est pas transmis ; renvoyer les jours manquants."
+)
+
+# Regroupe des dates consécutives en périodes lisibles.
+periodes <- function(dates) {
+  if (!length(dates)) return("aucune")
+  dates <- sort(dates)
+  groupe <- cumsum(c(1, diff(dates) != 1))
+  vapply(split(dates, groupe), function(x) {
+    if (length(x) == 1) format(x, "%d/%m") else paste0("du ", format(min(x), "%d/%m"), " au ", format(max(x), "%d/%m"))
+  }, "") |> paste(collapse = ", ")
+}
+statut <- \(x, objectif) ifelse(x >= objectif, "<span class='statut-ok'>✔ atteint</span>", "<span class='statut-ko'>✖ non atteint</span>")
+```
+
+<div class="avertissement">
+<b>Données simulées.</b> Les RPU réels sont des données de santé confidentielles. Cet établissement, ses
+patients et ses passages sont fictifs ; seul le volume quotidien suit le profil réel du département
+(DREES 2023). Les défauts sont injectés et catalogués (voir `docs/catalogue_defauts.md`).
+</div>
+
+<div class="chiffres">
+<div class="chiffre"><span class="valeur">`r nb(100 * e$score, 0.1)` / 100</span><span class="libelle">score qualité global (`r rang`<sup>`r if (rang == 1) "er" else "e"`</sup> sur `r nrow(ind)` établissements)</span></div>
+<div class="chiffre"><span class="valeur">`r nb(e$passages)`</span><span class="libelle">passages transmis en 2023 (`r e$etablissement`, département `r rpu$dep[rpu$finess == f][1]`)</span></div>
+<div class="chiffre"><span class="valeur">`r nb(sum(!is.na(a_etab$id_passage)))`</span><span class="libelle">anomalies au niveau du passage (`r pct(dplyr::n_distinct(a_etab$id_passage, na.rm = TRUE) / e$passages)` des passages)</span></div>
+<div class="chiffre"><span class="valeur">`r sum(a_etab$type_defaut == "trou_transmission")`</span><span class="libelle">jours sans transmission</span></div>
+</div>
+
+## Les quatre dimensions
+
+```{r dimensions}
+moy <- colMeans(ind[c("exhaustivite", "completude", "coherence", "exploitabilite_dp")])
+tibble::tibble(
+  dimension = c("Exhaustivité", "Complétude", "Cohérence", "Exploitabilité du DP"),
+  definition = c("jours de l'année avec au moins un passage transmis",
+                 "champs DP, CCMU, mode de sortie et code postal renseignés",
+                 "passages sans incohérence (dates, âge, sexe, décès, doublon)",
+                 "passages avec un DP renseigné et au format CIM-10"),
+  valeur = unlist(e[c("exhaustivite", "completude", "coherence", "exploitabilite_dp")]),
+  region = moy,
+  objectif = OBJECTIFS[c("exhaustivite", "completude", "coherence", "exploitabilite_dp")]
+) |>
+  dplyr::mutate(statut = statut(valeur, objectif)) |>
+  tableau() |>
+  gt::cols_label(dimension = "Dimension", definition = "Ce qui est mesuré", valeur = f,
+                 region = "Moyenne des 8", objectif = "Objectif", statut = "") |>
+  gt::fmt_percent(c(valeur, region), decimals = 1, dec_mark = ",") |>
+  gt::fmt_percent(objectif, decimals = 0) |>
+  gt::fmt_markdown(statut) |>
+  gt::tab_caption("Indicateurs de qualité 2023 (objectifs retenus pour ce projet, pas une norme officielle)") |>
+  gt::tab_footnote("Score global = moyenne des quatre dimensions.")
+```
+
+## Exhaustivité calendaire
+
+```{r calendrier, fig.height=3}
+r_etab <- rpu[rpu$finess == f, ]
+jours <- r_etab[!duplicated(r_etab), ] |>
+  dplyr::mutate(date = as.Date(entree, tz = "Europe/Paris")) |>
+  dplyr::count(date) |>
+  tidyr::complete(date = seq(as.Date("2023-01-01"), as.Date("2023-12-31"), "day"), fill = list(n = 0))
+trous <- a_etab$date[a_etab$type_defaut == "trou_transmission"]
+ggplot(jours, aes(date, n)) +
+  { if (length(trous)) geom_vline(xintercept = trous, colour = "#e34948", linewidth = 0.8, alpha = 0.35) } +
+  geom_line(colour = COULEURS_DEP[["59"]], linewidth = 0.45) +
+  scale_y_continuous(limits = c(0, NA), labels = axe_nb) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%m/%Y") +
+  labs(title = "Passages transmis par jour en 2023", subtitle = if (length(trous)) "En rouge : jours sans aucun passage transmis",
+       x = NULL, y = "passages", caption = "Source : extrait RPU simulé.")
+```
+
+Jours sans transmission : **`r periodes(trous)`**.
+
+## Complétude champ par champ
+
+```{r completude, fig.height=2.8}
+champs <- c(dp = "Diagnostic principal", ccmu = "Gravité CCMU", mode_sortie = "Mode de sortie",
+            code_postal = "Code postal")
+comp <- rpu[rpu$finess == f, ] |>
+  dplyr::summarise(dplyr::across(dplyr::all_of(names(champs)), \(x) mean(!is.na(x)))) |>
+  tidyr::pivot_longer(dplyr::everything(), names_to = "champ", values_to = "taux") |>
+  dplyr::mutate(champ = factor(champs[champ], rev(champs)))
+ggplot(comp, aes(taux, champ)) +
+  geom_col(fill = COULEURS_DEP[["59"]], width = 0.55) +
+  geom_vline(xintercept = OBJECTIFS[["completude"]], colour = ENCRE, linetype = "22", linewidth = 0.4) +
+  geom_text(aes(label = pct(taux)), hjust = -0.15, size = 3.3, colour = ENCRE) +
+  scale_x_continuous(labels = axe_pct, limits = c(0, 1.08), breaks = seq(0, 1, 0.25)) +
+  labs(title = "Part des passages où le champ est renseigné", subtitle = "Tirets : objectif de 95 %",
+       x = NULL, y = NULL)
+```
+
+## Anomalies détectées
+
+```{r anomalies}
+a_etab |>
+  dplyr::count(type_defaut) |>
+  dplyr::mutate(part = ifelse(type_defaut == "trou_transmission", n / 365, n / e$passages),
+                base = ifelse(type_defaut == "trou_transmission", "des jours", "des passages"),
+                dimension = DIMENSIONS[type_defaut], libelle = LIBELLES[type_defaut]) |>
+  dplyr::arrange(dplyr::desc(n)) |>
+  dplyr::select(libelle, dimension, n, part, base) |>
+  tableau() |>
+  gt::cols_label(libelle = "Anomalie", dimension = "Dimension", n = "Nombre", part = "Part", base = "") |>
+  gt::fmt_number(n, decimals = 0, sep_mark = " ") |>
+  gt::fmt_percent(part, decimals = 2, dec_mark = ",") |>
+  gt::tab_caption("Toutes les anomalies de l'établissement, de la plus fréquente à la plus rare")
+```
+
+## Actions prioritaires
+
+```{r actions, results="asis"}
+top <- actions_prioritaires(anomalies, f)
+for (k in seq_len(nrow(top))) {
+  cat(sprintf("%d. **%s** (%s cas) : %s\n", k, LIBELLES[[top$type_defaut[k]]], nb(top$n[k]),
+              CONSEILS[[top$type_defaut[k]]]))
+}
+```
+
+## Passages à corriger (extrait)
+
+```{r exemples}
+top_passage <- setdiff(top$type_defaut, "trou_transmission")
+a_etab |>
+  dplyr::filter(type_defaut %in% top_passage) |>
+  dplyr::slice_head(n = 5, by = type_defaut) |>
+  dplyr::left_join(rpu[!duplicated(rpu$id_passage), ], by = c("id_passage", "finess")) |>
+  dplyr::transmute(anomalie = LIBELLES[type_defaut], id_passage, entree = format(entree, "%d/%m/%Y %H:%M"),
+                   age, sexe, ccmu, dp, mode_sortie) |>
+  tableau() |>
+  gt::cols_label(anomalie = "Anomalie", id_passage = "Passage", entree = "Entrée", age = "Âge", sexe = "Sexe",
+                 ccmu = "CCMU", dp = "DP", mode_sortie = "Sortie") |>
+  gt::sub_missing(missing_text = "—") |>
+  gt::tab_caption("Cinq exemples par anomalie prioritaire ; la liste complète se calcule avec detecter_anomalies()")
+```
+
+<p style="color:#52514e;font-size:.9em">Rapport généré automatiquement depuis `rapports/qualite.Rmd`
+(paramètre `finess = "`r f`"`). Même modèle pour les 8 établissements.</p>

@@ -8,3 +8,4 @@ renv/staging/
 data/raw/
 *_cache/
 *_files/
+site/

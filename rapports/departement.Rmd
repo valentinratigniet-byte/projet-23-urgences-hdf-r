@@ -1,0 +1,162 @@
+---
+title: "Urgences : `r c('02' = 'Aisne', '59' = 'Nord', '60' = 'Oise', '62' = 'Pas-de-Calais', '80' = 'Somme')[[params$dep]]` (`r params$dep`)"
+subtitle: "Rapport départemental 2017-2023, comparé à la région et à la France"
+params:
+  dep: "59"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    css: style.css
+    self_contained: true
+---
+
+```{r setup, include=FALSE}
+source("rapports/_commun.R", encoding = "UTF-8")
+d <- params$dep
+nom <- NOMS_DEP[[d]]
+hdf <- passages |> dplyr::filter(dep != "FR")
+region <- hdf |> dplyr::summarise(nb_passages = sum(nb_passages), .by = date) |>
+  dplyr::mutate(dep = "HDF", libelle_dep = "Hauts-de-France")
+annuel <- passages_annuels(dplyr::bind_rows(passages, region))
+a <- \(x, an) annuel$passages[annuel$dep == x & annuel$annee == an]
+evol <- \(x) a(x, 2023) / a(x, 2019) - 1
+serie <- passages |> dplyr::filter(dep == d)
+part <- a(d, 2023) / a("HDF", 2023)
+rang <- rank(-sapply(c("02", "59", "60", "62", "80"), evol))[[d]]
+```
+
+<div class="avertissement">
+Volumes journaliers <b>estimés</b> par la DREES (RPU calés sur les totaux annuels de la SAE). Ils sont
+fiables pour les tendances et la saisonnalité, pas pour lire une journée isolée.
+</div>
+
+<div class="chiffres">
+<div class="chiffre"><span class="valeur">`r nb(a(d, 2023))`</span><span class="libelle">passages en 2023 (`r pct(part, 1)` de la région)</span></div>
+<div class="chiffre"><span class="valeur">`r nb(a(d, 2023) / 365)`</span><span class="libelle">passages par jour en moyenne en 2023</span></div>
+<div class="chiffre"><span class="valeur">`r pct(evol(d), signe = TRUE)`</span><span class="libelle">entre 2019 et 2023 (région : `r pct(evol("HDF"), signe = TRUE)`, France : `r pct(evol("FR"), signe = TRUE)`)</span></div>
+<div class="chiffre"><span class="valeur">`r rang`<sup>`r if (rang == 1) "er" else "e"`</sup> / 5</span><span class="libelle">rang régional de l'évolution 2019-2023</span></div>
+</div>
+
+## Évolution comparée à la France
+
+```{r evolution}
+base <- passages |>
+  dplyr::filter(dep %in% c(d, "FR")) |>
+  dplyr::mutate(mm7 = moyenne_mobile(nb_passages), .by = dep) |>
+  dplyr::mutate(indice = 100 * mm7 / mean(nb_passages[lubridate::year(date) == 2019]), .by = dep)
+ggplot(base, aes(date, indice, colour = dep)) +
+  geom_hline(yintercept = 100, colour = "#c9c8c3", linewidth = 0.3) +
+  geom_line(linewidth = 0.55, na.rm = TRUE) +
+  scale_colour_manual(values = c(COULEURS_DEP[d], FR = "#b5b4af"), labels = NOMS_DEP, name = NULL) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  labs(title = paste0("Passages quotidiens, moyenne mobile 7 jours, indice base 100 = moyenne 2019"),
+       x = NULL, y = "indice (2019 = 100)", caption = SOURCE_DREES)
+```
+
+```{r tableau}
+annuel |>
+  dplyr::filter(dep %in% c(d, "HDF", "FR")) |>
+  dplyr::mutate(libelle = c(NOMS_DEP, HDF = "Hauts-de-France")[dep]) |>
+  dplyr::select(annee, libelle, evolution) |>
+  tidyr::pivot_wider(names_from = libelle, values_from = evolution) |>
+  dplyr::left_join(dplyr::select(dplyr::filter(annuel, dep == d), annee, passages), by = "annee") |>
+  dplyr::relocate(annee, passages, dplyr::all_of(nom), "Hauts-de-France", France) |>
+  tableau() |>
+  gt::cols_label(annee = "Année", passages = paste("Passages", nom)) |>
+  gt::tab_spanner("Évolution sur un an", columns = -c(annee, passages)) |>
+  gt::fmt_number(passages, decimals = 0, sep_mark = " ") |>
+  gt::fmt_percent(-c(annee, passages), decimals = 1, dec_mark = ",", force_sign = TRUE) |>
+  gt::sub_missing(missing_text = "") |>
+  gt::tab_caption(paste("Passages annuels dans le département", nom))
+```
+
+## Saisonnalité
+
+```{r semaine, fig.height=3.3}
+jours <- dplyr::bind_rows(indice_jour_semaine(serie), indice_jour_semaine(region))
+ggplot(jours, aes(jour, indice - 1, fill = dep)) +
+  geom_col(position = position_dodge(width = 0.75), width = 0.7) +
+  geom_hline(yintercept = 0, colour = ENCRE, linewidth = 0.3) +
+  scale_fill_manual(values = c(COULEURS_DEP[d], HDF = "#c9c8c3"),
+                    labels = c(NOMS_DEP[d], HDF = "Hauts-de-France"), name = NULL) +
+  scale_y_continuous(labels = axe_pct) +
+  labs(title = "Écart à la journée moyenne selon le jour de la semaine (2017-2023)",
+       x = NULL, y = "écart à la journée moyenne", caption = SOURCE_DREES)
+```
+
+```{r mois, fig.height=3.3}
+mois <- serie |> dplyr::filter(!lubridate::year(date) %in% c(2020, 2021)) |> indice_mensuel()
+pic_mois <- mois$mois[which.max(mois$indice)]
+creux_mois <- mois$mois[which.min(mois$indice)]
+MOIS <- c("janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre",
+          "octobre", "novembre", "décembre")
+ggplot(mois, aes(mois, indice)) +
+  geom_hline(yintercept = 1, colour = "#c9c8c3", linewidth = 0.3) +
+  geom_line(colour = COULEURS_DEP[[d]], linewidth = 0.7) +
+  geom_point(colour = COULEURS_DEP[[d]], size = 2.2) +
+  scale_x_continuous(breaks = 1:12, labels = c("janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.",
+                                               "août", "sept.", "oct.", "nov.", "déc.")) +
+  scale_y_continuous(labels = \(x) nb(x, 0.01)) +
+  labs(title = "Indice mensuel des passages (hors 2020-2021)", x = NULL, y = "indice (1 = mois moyen)",
+       caption = SOURCE_DREES)
+```
+
+Le mois le plus chargé est **`r MOIS[pic_mois]`** (`r pct(max(mois$indice) - 1, 1, signe = TRUE)`), le plus
+calme **`r MOIS[creux_mois]`** (`r pct(min(mois$indice) - 1, 1, signe = TRUE)`).
+
+## Épidémies hivernales (2021-2023)
+
+```{r epidemies, fig.height=5.4}
+rap <- rapprocher_epidemies(serie, epidemies) |> dplyr::filter(semaine >= as.Date("2021-01-01"))
+dplyr::bind_rows(
+  dplyr::distinct(rap, semaine, valeur = passages) |> dplyr::mutate(serie = "Passages hebdomadaires, toutes causes", pathologie = "toutes"),
+  dplyr::transmute(rap, semaine, valeur = taux_passages, pathologie, serie = paste0(pathologie, " (taux pour 100 000 passages)"))
+) |>
+  dplyr::filter(!is.na(valeur)) |>
+  dplyr::mutate(serie = factor(serie, unique(serie))) |>
+  ggplot(aes(semaine, valeur, colour = pathologie)) +
+  geom_line(linewidth = 0.55, show.legend = FALSE) +
+  facet_wrap(~serie, ncol = 1, scales = "free_y") +
+  scale_colour_manual(values = c(COULEURS_PATHO, toutes = ENCRE)) +
+  scale_y_continuous(labels = axe_nb) +
+  scale_x_date(date_breaks = "6 months", date_labels = "%m/%Y") +
+  labs(title = paste("Passages et poids des épidémies hivernales,", nom),
+       subtitle = "Une échelle par panneau : on compare le calendrier des pics, pas les niveaux",
+       x = NULL, y = NULL, caption = SOURCE_ODISSE)
+```
+
+```{r correlation}
+rap |>
+  dplyr::filter(!is.na(taux_passages)) |>
+  dplyr::summarise(correlation = stats::cor(passages, taux_passages), pic = semaine[which.max(taux_passages)],
+                   taux_max = max(taux_passages), .by = pathologie) |>
+  dplyr::mutate(pathologie = c(grippe = "Grippe", bronchiolite = "Bronchiolite (moins de 1 an)",
+                               gastro = "Gastro-entérite")[pathologie]) |>
+  tableau() |>
+  gt::cols_label(pathologie = "Pathologie", correlation = "Corrélation avec les passages",
+                 pic = "Semaine du pic", taux_max = "Taux au pic") |>
+  gt::fmt_number(correlation, decimals = 2, dec_mark = ",") |>
+  gt::fmt_number(taux_max, decimals = 0, sep_mark = " ") |>
+  gt::fmt_date(pic, date_style = "day_m_year", locale = "fr") |>
+  gt::tab_caption("Lien entre le poids de chaque épidémie et le volume de passages (2021-2023)")
+```
+
+## Jours les plus chargés
+
+```{r pics}
+jours_pic(serie, q = 0.995) |>
+  utils::head(10) |>
+  dplyr::mutate(jour = JOURS[lubridate::wday(date, week_start = 1)],
+                ecart = nb_passages / mean(serie$nb_passages) - 1) |>
+  dplyr::select(date, jour, nb_passages, ecart) |>
+  tableau() |>
+  gt::cols_label(date = "Date", jour = "Jour", nb_passages = "Passages estimés", ecart = "Écart à la moyenne") |>
+  gt::fmt_date(date, date_style = "day_m_year", locale = "fr") |>
+  gt::fmt_number(nb_passages, decimals = 0, sep_mark = " ") |>
+  gt::fmt_percent(ecart, decimals = 0, force_sign = TRUE) |>
+  gt::tab_caption("Les 10 journées les plus chargées de 2017-2023")
+```
+
+<p style="color:#52514e;font-size:.9em">Rapport généré automatiquement depuis `rapports/departement.Rmd`
+(paramètre `dep = "`r d`"`). Même modèle pour les 5 départements.</p>

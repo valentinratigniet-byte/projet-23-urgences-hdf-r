@@ -1,0 +1,218 @@
+---
+title: "Activité des urgences en Hauts-de-France, 2017-2023"
+subtitle: "Panorama régional : volumes, tendance, saisonnalité et épidémies"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    css: style.css
+    self_contained: true
+---
+
+```{r setup, include=FALSE}
+source("rapports/_commun.R", encoding = "UTF-8")
+
+hdf <- passages |> dplyr::filter(dep != "FR")
+region <- hdf |> dplyr::summarise(nb_passages = sum(nb_passages), .by = date) |>
+  dplyr::mutate(dep = "HDF", libelle_dep = "Hauts-de-France")
+annuel <- passages_annuels(dplyr::bind_rows(passages, region))
+a <- \(d, an) annuel$passages[annuel$dep == d & annuel$annee == an]
+
+total_2023 <- a("HDF", 2023)
+evol_2019 <- total_2023 / a("HDF", 2019) - 1
+evol_fr <- a("FR", 2023) / a("FR", 2019) - 1
+chute_2020 <- a("HDF", 2020) / a("HDF", 2019) - 1
+part_nord <- a("59", 2023) / total_2023
+```
+
+<div class="avertissement">
+Les volumes journaliers sont des <b>estimations</b> de la DREES : les passages issus des RPU sont calés sur
+les totaux annuels de la SAE (méthode Denton-Cholette). Ils décrivent bien les tendances et la saisonnalité,
+mais une journée isolée ne doit pas être lue comme un comptage exact.
+</div>
+
+<div class="chiffres">
+<div class="chiffre"><span class="valeur">`r nb(total_2023 / 1e6, 0.01)` M</span><span class="libelle">passages aux urgences en 2023 dans les 5 départements</span></div>
+<div class="chiffre"><span class="valeur">`r nb(total_2023 / 365)`</span><span class="libelle">passages par jour en moyenne en 2023</span></div>
+<div class="chiffre"><span class="valeur">`r pct(evol_2019, signe = TRUE)`</span><span class="libelle">entre 2019 et 2023 (France : `r pct(evol_fr, signe = TRUE)`)</span></div>
+<div class="chiffre"><span class="valeur">`r pct(part_nord, 1)`</span><span class="libelle">des passages régionaux sont dans le Nord</span></div>
+</div>
+
+## Évolution depuis 2017
+
+```{r evolution}
+covid <- data.frame(debut = as.Date("2020-03-17"), fin = as.Date("2020-05-11"))
+region |>
+  dplyr::mutate(mm7 = moyenne_mobile(nb_passages)) |>
+  ggplot(aes(date, mm7)) +
+  geom_rect(data = covid, aes(xmin = debut, xmax = fin, ymin = -Inf, ymax = Inf), inherit.aes = FALSE,
+            fill = "#f3f3f1") +
+  annotate("text", x = as.Date("2020-04-14"), y = Inf, vjust = 1.5, label = "1er confinement",
+           size = 3.2, colour = ENCRE) +
+  geom_line(colour = COULEURS_DEP[["59"]], linewidth = 0.6) +
+  scale_y_continuous(labels = axe_nb, limits = c(0, NA)) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  labs(title = "Passages quotidiens en Hauts-de-France (moyenne mobile sur 7 jours)",
+       x = NULL, y = "passages par jour", caption = SOURCE_DREES)
+```
+
+L'activité régionale recule de **`r pct(abs(chute_2020), 1)`** en 2020, avec un creux pendant le premier
+confinement, puis remonte en 2021 et 2022. En 2023, elle est
+`r if (abs(evol_2019) < 0.01) "revenue à son niveau de 2019" else if (evol_2019 < 0) paste("encore", pct(abs(evol_2019)), "sous son niveau de 2019") else paste(pct(evol_2019), "au-dessus de son niveau de 2019")`.
+
+```{r tendance, fig.height=3.4}
+hebdo <- region |>
+  dplyr::mutate(semaine = lubridate::floor_date(date, "week", week_start = 1)) |>
+  dplyr::summarise(passages = sum(nb_passages), n = dplyr::n(), .by = semaine) |>
+  dplyr::filter(n == 7)
+stl_hebdo <- stats::stl(stats::ts(hebdo$passages, frequency = 52), s.window = "periodic", robust = TRUE)
+hebdo$tendance <- as.numeric(stl_hebdo$time.series[, "trend"])
+ggplot(hebdo, aes(semaine)) +
+  geom_line(aes(y = passages), colour = "#c9c8c3", linewidth = 0.4) +
+  geom_line(aes(y = tendance), colour = COULEURS_DEP[["59"]], linewidth = 0.9) +
+  scale_y_continuous(labels = axe_nb) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  labs(title = "Tendance de fond (décomposition STL des passages hebdomadaires)",
+       subtitle = "En gris : passages hebdomadaires observés ; en bleu : tendance une fois la saisonnalité retirée",
+       x = NULL, y = "passages par semaine", caption = SOURCE_DREES)
+```
+
+## Comparaison des départements
+
+```{r indice-dep, fig.height=4.6}
+indice <- annuel |>
+  dplyr::filter(dep != "HDF") |>
+  dplyr::mutate(indice = 100 * passages / passages[annee == 2019], .by = dep)
+ggplot(indice, aes(annee, indice, colour = dep)) +
+  geom_hline(yintercept = 100, colour = "#c9c8c3", linewidth = 0.3) +
+  geom_line(aes(linetype = dep == "FR"), linewidth = 0.7, show.legend = FALSE) +
+  geom_point(size = 2.2) +
+  scale_colour_manual(values = COULEURS_DEP, labels = NOMS_DEP, name = NULL) +
+  scale_linetype_manual(values = c(`FALSE` = "solid", `TRUE` = "22")) +
+  scale_x_continuous(breaks = 2017:2023) +
+  labs(title = "Passages annuels, indice base 100 en 2019",
+       subtitle = "France : 93 départements dont la série couvre 2017-2023 (tirets)",
+       x = NULL, y = "indice (2019 = 100)", caption = SOURCE_DREES)
+```
+
+```{r tableau-dep}
+annuel |>
+  dplyr::filter(dep != "FR", annee %in% c(2019, 2022, 2023)) |>
+  dplyr::select(dep, libelle_dep, annee, passages) |>
+  tidyr::pivot_wider(names_from = annee, values_from = passages, names_prefix = "a") |>
+  dplyr::mutate(evol = a2023 / a2019 - 1, dep = factor(dep, c("02", "59", "60", "62", "80", "HDF"))) |>
+  dplyr::arrange(dep) |>
+  dplyr::select(-dep) |>
+  tableau() |>
+  gt::cols_label(libelle_dep = "Département", a2019 = "2019", a2022 = "2022", a2023 = "2023",
+                 evol = "Évolution 2019-2023") |>
+  gt::fmt_number(c(a2019, a2022, a2023), decimals = 0, sep_mark = " ") |>
+  gt::fmt_percent(evol, decimals = 1, dec_mark = ",", force_sign = TRUE) |>
+  gt::tab_style(gt::cell_text(weight = "bold"), gt::cells_body(rows = libelle_dep == "Hauts-de-France")) |>
+  gt::tab_caption("Passages annuels par département")
+```
+
+## Saisonnalité
+
+```{r semaine, fig.height=3.3}
+jours <- indice_jour_semaine(region)
+ggplot(jours, aes(jour, indice - 1)) +
+  geom_col(fill = COULEURS_DEP[["59"]], width = 0.6) +
+  geom_hline(yintercept = 0, colour = ENCRE, linewidth = 0.3) +
+  geom_text(aes(label = pct(indice - 1, 1, signe = TRUE), vjust = ifelse(indice >= 1, -0.5, 1.5)),
+            size = 3.2, colour = ENCRE) +
+  scale_y_continuous(labels = axe_pct, expand = expansion(mult = 0.15)) +
+  labs(title = "Écart à la journée moyenne selon le jour de la semaine (Hauts-de-France, 2017-2023)",
+       x = NULL, y = "écart à la journée moyenne", caption = SOURCE_DREES)
+```
+
+Le **`r as.character(jours$jour[which.max(jours$indice)])`** est la journée la plus chargée
+(`r pct(max(jours$indice) - 1, 1, signe = TRUE)` par rapport à la moyenne), le
+**`r as.character(jours$jour[which.min(jours$indice)])`** la plus calme
+(`r pct(min(jours$indice) - 1, 1, signe = TRUE)`). Le dimensionnement des équipes
+doit suivre ce profil hebdomadaire, qui varie peu d'un département à l'autre.
+
+```{r mois, fig.height=3.3}
+mois <- region |> dplyr::filter(!lubridate::year(date) %in% c(2020, 2021)) |> indice_mensuel()
+ggplot(mois, aes(mois, indice)) +
+  geom_hline(yintercept = 1, colour = "#c9c8c3", linewidth = 0.3) +
+  geom_line(colour = COULEURS_DEP[["59"]], linewidth = 0.7) +
+  geom_point(colour = COULEURS_DEP[["59"]], size = 2.2) +
+  scale_x_continuous(breaks = 1:12, labels = c("janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.",
+                                               "août", "sept.", "oct.", "nov.", "déc.")) +
+  scale_y_continuous(labels = \(x) nb(x, 0.01)) +
+  labs(title = "Indice mensuel des passages (hors 2020-2021, années perturbées par le Covid)",
+       x = NULL, y = "indice (1 = mois moyen)", caption = SOURCE_DREES)
+```
+
+## Épidémies hivernales (2021-2023)
+
+Les indicateurs de Santé publique France ne commencent qu'en 2021, et la série DREES s'arrête fin 2023 :
+le rapprochement porte sur ces trois années. Les taux régionaux sont la moyenne des taux départementaux
+pondérée par les passages.
+
+```{r epidemies, fig.height=6.2}
+rap <- rapprocher_epidemies(hdf, epidemies) |> dplyr::filter(semaine >= as.Date("2021-01-01"))
+taux_region <- rap |>
+  dplyr::filter(!is.na(taux_passages)) |>
+  dplyr::summarise(valeur = sum(taux_passages * passages) / sum(passages), .by = c(semaine, pathologie)) |>
+  dplyr::mutate(serie = paste0(pathologie, " (taux pour 100 000 passages)"))
+passages_semaine <- rap |>
+  dplyr::distinct(dep, semaine, passages) |>
+  dplyr::summarise(valeur = sum(passages), .by = semaine) |>
+  dplyr::mutate(serie = "Passages hebdomadaires, toutes causes", pathologie = "toutes")
+dplyr::bind_rows(passages_semaine, taux_region) |>
+  dplyr::mutate(serie = factor(serie, unique(serie))) |>
+  ggplot(aes(semaine, valeur, colour = pathologie)) +
+  geom_line(linewidth = 0.6, show.legend = FALSE) +
+  facet_wrap(~serie, ncol = 1, scales = "free_y") +
+  scale_colour_manual(values = c(COULEURS_PATHO, toutes = ENCRE)) +
+  scale_y_continuous(labels = axe_nb) +
+  scale_x_date(date_breaks = "6 months", date_labels = "%m/%Y") +
+  labs(title = "Passages et poids des épidémies hivernales aux urgences, Hauts-de-France",
+       subtitle = "Une échelle par panneau : on compare le calendrier des pics, pas les niveaux",
+       x = NULL, y = NULL, caption = SOURCE_ODISSE)
+```
+
+```{r correlation}
+cor_patho <- dplyr::left_join(
+  dplyr::select(passages_semaine, semaine, passages = valeur),
+  dplyr::select(taux_region, semaine, pathologie, taux = valeur), by = "semaine") |>
+  dplyr::filter(!is.na(taux)) |>
+  dplyr::summarise(correlation = stats::cor(passages, taux), semaines = dplyr::n(),
+                   pic = semaine[which.max(taux)], .by = pathologie)
+cor_patho |>
+  dplyr::mutate(pathologie = c(grippe = "Grippe", bronchiolite = "Bronchiolite (moins de 1 an)",
+                               gastro = "Gastro-entérite")[pathologie]) |>
+  tableau() |>
+  gt::cols_label(pathologie = "Pathologie", correlation = "Corrélation avec les passages",
+                 semaines = "Semaines", pic = "Semaine du pic") |>
+  gt::fmt_number(correlation, decimals = 2, dec_mark = ",") |>
+  gt::fmt_date(pic, date_style = "day_m_year", locale = "fr") |>
+  gt::tab_caption("Lien entre le poids de chaque épidémie et le volume total de passages (2021-2023)")
+```
+
+Une corrélation positive indique que les semaines où l'épidémie pèse le plus sont aussi des semaines
+chargées. Elle ne mesure pas un effet causal : l'hiver cumule plusieurs épidémies et d'autres facteurs.
+
+## Jours les plus chargés
+
+```{r pics}
+jours_pic(region, q = 0.995) |>
+  utils::head(10) |>
+  dplyr::mutate(jour = JOURS[lubridate::wday(date, week_start = 1)],
+                ecart = nb_passages / mean(region$nb_passages) - 1) |>
+  dplyr::select(date, jour, nb_passages, ecart) |>
+  tableau() |>
+  gt::cols_label(date = "Date", jour = "Jour", nb_passages = "Passages estimés", ecart = "Écart à la moyenne") |>
+  gt::fmt_date(date, date_style = "day_m_year", locale = "fr") |>
+  gt::fmt_number(nb_passages, decimals = 0, sep_mark = " ") |>
+  gt::fmt_percent(ecart, decimals = 0, force_sign = TRUE) |>
+  gt::tab_caption("Les 10 journées les plus chargées de 2017-2023 en Hauts-de-France")
+```
+
+## Limites
+
+- Les volumes journaliers sont estimés par la DREES ; les totaux annuels, eux, sont ceux de la SAE.
+- Pas de rapport à la population : les comparaisons entre départements passent par un indice base 100 en 2019.
+- Les épidémies ne sont observées que de 2021 à 2023, et sous forme de taux pour 100 000 passages.
