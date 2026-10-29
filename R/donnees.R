@@ -12,6 +12,11 @@ JEUX_ODISSE <- c(
   bronchiolite = "bronchiolite-passages-aux-urgences-et-actes-sos-medecins-departement",
   gastro       = "gastro-enterite-aigue-passages-aux-urgences-et-actes-sos-medecins-departement"
 )
+# SAE 2023, base administrative (DREES) : un service d'urgence par ligne (URG = GEN ou PED).
+URL_SAE <- paste0("https://data.drees.solidarites-sante.gouv.fr/api/datasets/1.0/707_bases-administratives-sae/",
+                  "attachments/sae_2023_base_administrative_formats_sas_csv_zip")
+# Contours des départements (Etalab, d'après OpenStreetMap, licence ODbL), résolution 100 m.
+URL_CONTOURS <- "https://etalab-datasets.geo.data.gouv.fr/contours-administratifs/2023/geojson/departements-100m.geojson"
 # INSEE, estimations de population au 1er janvier par département (édition du 23/12/2025, années récentes révisables).
 URL_INSEE_POP <- "https://www.insee.fr/fr/statistiques/fichier/8721456/estim-pop-dep-sexe-gca-1975-2026.xlsx"
 
@@ -57,6 +62,41 @@ lire_population <- function(annees = 2017:2023, dossier = "data/raw") {
   }) |> purrr::list_rbind()
 }
 
+# Services d'urgence des 5 départements : passages, dont 80 ans et plus, moins de 18 ans, et hospitalisés
+# (MCO, SMR-PSY-USLD et HAD dans la même entité juridique ; dtEXT : dans une autre entité juridique).
+lire_sae_urgences <- function(dossier = "data/raw") {
+  zip <- telecharger(URL_SAE, file.path(dossier, "sae_2023_base_administrative.zip"))
+  base <- "SAE 2023 Base administrative - Formats SAS-CSV/Base CSV/"
+  sortie <- file.path(tempdir(), "sae2023")
+  utils::unzip(zip, files = paste0(base, c("ID_2023.csv", "URGENCES2_2023.csv")), exdir = sortie)
+  lire <- \(f) readr::read_delim(file.path(sortie, base, f), delim = ";", show_col_types = FALSE,
+                                 locale = readr::locale(encoding = "latin1"), col_types = readr::cols(.default = "c"))
+  id <- lire("ID_2023.csv")
+  num <- c("PASSU", "dt80", "dt18", "dtMCO", "dtLS", "dtHAD", "dtEXT", "LIT_UHCD", "SEJ_UHCD")
+  lire("URGENCES2_2023.csv") |>
+    dplyr::inner_join(dplyr::select(id, FI, dep = DEP), by = "FI") |>
+    dplyr::filter(dep %in% DEPS_HDF) |>
+    dplyr::select(finess = FI, etablissement = RS, dep, type = URG, dplyr::all_of(num)) |>
+    dplyr::mutate(dplyr::across(dplyr::all_of(num), as.numeric)) |>
+    dplyr::arrange(dep, dplyr::desc(PASSU))
+}
+
+# Contour de chaque département des Hauts-de-France, en points de polygone (tracé par ggplot, sans sf).
+lire_contours <- function(dossier = "data/raw") {
+  f <- telecharger(URL_CONTOURS, file.path(dossier, "contours_departements.geojson"))
+  g <- jsonlite::fromJSON(f, simplifyVector = FALSE)
+  purrr::map(g$features, function(ft) {
+    dep <- ft$properties$code
+    if (!dep %in% DEPS_HDF) return(NULL)
+    polys <- if (ft$geometry$type == "Polygon") list(ft$geometry$coordinates) else ft$geometry$coordinates
+    # Anneau 1 : contour extérieur ; les suivants sont des trous (enclaves), tracés avec subgroup.
+    purrr::imap(polys, function(p, k) purrr::imap(p, function(points, a) {
+      tibble::tibble(dep = dep, morceau = k, anneau = a,
+                     lon = purrr::map_dbl(points, 1), lat = purrr::map_dbl(points, 2))
+    }) |> purrr::list_rbind()) |> purrr::list_rbind()
+  }) |> purrr::list_rbind()
+}
+
 # Contrôles d'entrée : arrête le traitement si la source a changé de forme.
 controler_passages <- function(p) {
   jours <- seq(as.Date("2017-01-01"), as.Date("2023-12-31"), by = "day")
@@ -89,4 +129,14 @@ controler_population <- function(pop, annees = 2017:2023) {
     "populations HDF plausibles (300 000 à 3 millions)" = all(hdf$population > 3e5 & hdf$population < 3e6)
   )
   invisible(pop)
+}
+
+controler_sae <- function(sae) {
+  stopifnot(
+    "5 départements HDF" = setequal(unique(sae$dep), DEPS_HDF),
+    "un service par établissement et par type" = !anyDuplicated(sae[c("finess", "type")]),
+    "nombre de passages renseigné partout" = !anyNA(sae$PASSU),
+    "types GEN ou PED" = all(sae$type %in% c("GEN", "PED"))
+  )
+  invisible(sae)
 }

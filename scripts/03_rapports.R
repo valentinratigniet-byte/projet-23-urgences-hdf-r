@@ -27,6 +27,7 @@ if (tous || "qualite" %in% args) {
   for (f in ETABLISSEMENTS$finess) rendre("qualite.Rmd", sprintf("qualite/%s.html", f), list(finess = f))
 }
 if (tous || "activite" %in% args) rendre("activite_rpu.Rmd", "activite_rpu.html")
+if (tous || "sae" %in% args) rendre("etablissements_sae.Rmd", "etablissements_sae.html")
 if (tous || "note" %in% args) {
   rendre("note_ars.Rmd", "note_ars.html")
   # PDF sans LaTeX : impression de la page HTML par Chrome headless.

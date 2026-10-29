@@ -42,3 +42,22 @@ test_that("taux de recours pour 10 000 habitants", {
   expect_equal(nrow(t), 1)            # 2022 sans population : écartée
   expect_equal(t$taux, 3000)
 })
+
+test_that("indicateurs SAE : taux non calculable sans dtMCO, autres destinations vides à zéro", {
+  sae <- tibble::tibble(finess = c("A", "B", "C"), dep = "59", type = c("GEN", "GEN", "PED"),
+                        PASSU = c(1000, 500, 400), dt80 = c(100, NA, NA), dt18 = c(50, 20, 400),
+                        dtMCO = c(150, NA, 40), dtLS = c(10, 5, NA), dtHAD = NA, dtEXT = c(40, 5, NA))
+  i <- indicateurs_sae(sae)
+  expect_equal(i$taux_hospit, c(0.2, NA, 0.1))
+  expect_equal(i$part_80[1], 0.1)
+  expect_equal(i$declaration_complete, c(TRUE, FALSE, TRUE))   # un service pédiatrique n'a pas de 80 ans et plus
+  expect_false(any(i$incoherent))
+})
+
+test_that("rapprochement DREES / SAE par département", {
+  annuel <- tibble::tibble(dep = DEPS_HDF, annee = 2023, passages = c(100, 202, 300, 400, 500))
+  sae <- tibble::tibble(dep = c(DEPS_HDF, "59"), PASSU = c(100, 100, 300, 400, 500, 100))
+  r <- rapprocher_sae(annuel, sae)
+  expect_equal(r$services[r$dep == "59"], 2)
+  expect_equal(r$ecart[r$dep == "59"], 0.01)
+})

@@ -28,6 +28,8 @@ ind <- indicateurs_qualite(rpu, detecter_anomalies(rpu))
 dims <- names(OBJECTIFS)
 sous_objectif <- ind[rowSums(sweep(as.matrix(ind[dims]), 2, OBJECTIFS, `<`)) > 0, ]
 pire <- ind[1, ]
+sae <- readr::read_csv("data/sae_urgences_hdf_2023.csv", show_col_types = FALSE,
+                       col_types = readr::cols(finess = "c", dep = "c")) |> indicateurs_sae()
 ```
 
 <style>
@@ -44,7 +46,7 @@ p, li { margin: 0 0 4px; }
 img { max-width: 100%; }
 </style>
 
-<div class="entete">Projet de portfolio (Valentin Ratigniet), sans lien avec un organisme officiel · données DREES 2017-2023 et Santé publique France ·
+<div class="entete">Projet de portfolio (Valentin Ratigniet), sans lien avec un organisme officiel · données DREES 2017-2023, SAE 2023, INSEE et Santé publique France ·
 rédigée à partir des rapports du projet (panorama, départements, qualité)</div>
 
 ## Trois constats
@@ -87,11 +89,12 @@ compte les passages dans le département de l'établissement : il ne corrige pas
 
 ## Une recommandation
 
-Fiabiliser la donnée à la source avant d'élargir les indicateurs : sur l'extrait de démonstration,
-`r nrow(sous_objectif)` établissements sur `r nrow(ind)` n'atteignent pas au moins un objectif de qualité, et le
-diagnostic principal n'est exploitable que pour `r pct(pire$exploitabilite_dp, 1)` des passages
-chez le moins bon (`r pire$finess`). Un retour trimestriel par établissement, assorti de trois actions
-prioritaires, est déjà produit automatiquement.
+Fiabiliser la donnée à la source avant d'élargir les indicateurs. Dans la SAE 2023, **`r sum(is.na(sae$taux_hospit))`
+services d'urgence sur `r nrow(sae)`** ne déclarent pas leurs hospitalisations : leur taux d'hospitalisation ne peut
+pas être suivi. Le même travail vaut pour les RPU : sur l'extrait de démonstration, `r nrow(sous_objectif)`
+établissements sur `r nrow(ind)` n'atteignent pas au moins un objectif de qualité, et le diagnostic principal
+n'est exploitable que pour `r pct(pire$exploitabilite_dp, 1)` des passages chez le moins bon. Un retour
+trimestriel par établissement, avec trois actions prioritaires, est déjà produit automatiquement.
 
-<div class="avertissement">La partie qualité repose sur un <b>extrait RPU simulé</b> (8 établissements
+<div class="avertissement">La partie qualité RPU repose sur un <b>extrait RPU simulé</b> (8 établissements
 fictifs) : les RPU réels sont confidentiels. Elle illustre la méthode, pas la situation réelle des établissements.</div>

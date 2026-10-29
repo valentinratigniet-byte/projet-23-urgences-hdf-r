@@ -30,6 +30,8 @@ population_hdf <- population |>
 readr::write_csv(passages_hdf, "data/passages_hdf.csv")
 readr::write_csv(epidemies, "data/epidemies_hdf.csv")
 readr::write_csv(population_hdf, "data/population_hdf.csv")
+readr::write_csv(controler_sae(lire_sae_urgences()), "data/sae_urgences_hdf_2023.csv")
+readr::write_csv(lire_contours(), "data/contours_hdf.csv")
 
 message(sprintf("passages : %d lignes (%s → %s) ; épidémies : %d lignes ; population : %d lignes",
                 nrow(passages_hdf), min(passages_hdf$date), max(passages_hdf$date), nrow(epidemies),

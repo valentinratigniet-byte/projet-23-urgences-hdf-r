@@ -1,0 +1,118 @@
+---
+title: "Services d'urgence des Hauts-de-France en 2023"
+subtitle: "Ce que déclarent les établissements à la SAE (données réelles)"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    css: style.css
+    self_contained: true
+---
+
+```{r setup, include=FALSE}
+source("rapports/_commun.R", encoding = "UTF-8")
+sae <- readr::read_csv("data/sae_urgences_hdf_2023.csv", show_col_types = FALSE,
+                       col_types = readr::cols(finess = "c", dep = "c")) |>
+  indicateurs_sae()
+annuel <- passages_annuels(passages)
+rap <- rapprocher_sae(annuel, sae)
+complets <- sae[!is.na(sae$taux_hospit), ]
+gen <- sae[sae$type == "GEN" & !is.na(sae$part_80), ]
+taux_region <- sum(complets$hospitalises) / sum(complets$PASSU)
+non_calc <- sum(is.na(sae$taux_hospit))
+SOURCE_SAE <- "Source : DREES, SAE 2023, base administrative (bordereau Urgences)."
+```
+
+<div class="avertissement">
+<b>Données réelles, déclarées par les établissements.</b> La SAE (statistique annuelle des établissements de santé)
+recense chaque service d'urgence, général (GEN) ou pédiatrique (PED), avec son nombre de passages annuels.
+Le détail par âge et par destination d'hospitalisation est demandé depuis 2023 : tous les services ne l'ont
+pas encore renseigné.
+</div>
+
+<div class="chiffres">
+<div class="chiffre"><span class="valeur">`r nrow(sae)`</span><span class="libelle">services d'urgence (dont `r sum(sae$type == "PED")` pédiatriques) dans `r dplyr::n_distinct(sae$finess)` établissements</span></div>
+<div class="chiffre"><span class="valeur">`r nb(stats::median(sae$PASSU[sae$type == "GEN"]))`</span><span class="libelle">passages par an pour un service général médian</span></div>
+<div class="chiffre"><span class="valeur">`r pct(taux_region, 1)`</span><span class="libelle">des passages suivis d'une hospitalisation (`r nrow(complets)` services qui la déclarent)</span></div>
+<div class="chiffre"><span class="valeur">`r non_calc`</span><span class="libelle">services sur `r nrow(sae)` sans hospitalisations déclarées : taux non calculable</span></div>
+</div>
+
+## Deux sources, un même total
+
+La DREES estime ses passages journaliers en calant les RPU sur les totaux annuels de la SAE. Additionner les
+services de la SAE doit donc redonner les totaux annuels DREES : c'est un contrôle de cohérence entre sources.
+
+```{r rapprochement}
+rap |>
+  dplyr::mutate(departement = NOMS_DEP[dep], ecart_passages = round(drees) - sae) |>
+  dplyr::select(departement, services, sae, drees, ecart_passages) |>
+  tableau() |>
+  gt::cols_label(departement = "Département", services = "Services", sae = "Somme SAE", drees = "Total DREES",
+                 ecart_passages = "Écart (passages)") |>
+  gt::fmt_number(c(sae, drees), decimals = 0, sep_mark = " ") |>
+  gt::fmt_number(ecart_passages, decimals = 0, force_sign = TRUE) |>
+  gt::tab_caption("Passages 2023 : somme des services SAE et total annuel DREES")
+```
+
+L'écart ne dépasse pas **`r nb(max(abs(round(rap$drees) - rap$sae)))` passage** par département (arrondis des
+estimations journalières) : les deux sources concordent, ce qui confirme que les séries DREES utilisées dans le panorama sont bien calées sur la SAE.
+
+## Taille et hospitalisation par service
+
+```{r nuage, fig.height=4.4}
+ggplot(complets, aes(PASSU, taux_hospit, colour = dep)) +
+  geom_point(size = 2.6, alpha = 0.9) +
+  scale_colour_manual(values = COULEURS_DEP, labels = NOMS_DEP, name = NULL) +
+  scale_x_continuous(labels = axe_nb) +
+  scale_y_continuous(labels = axe_pct, limits = c(0, NA)) +
+  labs(title = "Taux d'hospitalisation selon le nombre de passages annuels",
+       subtitle = paste(nrow(complets), "services qui déclarent leurs hospitalisations",
+                        if (all(complets$type == "GEN")) "(tous généraux)" else ""),
+       x = "passages par an", y = "part des passages suivis d'une hospitalisation", caption = SOURCE_SAE)
+```
+
+Le taux d'hospitalisation va de `r pct(min(complets$taux_hospit), 1)` à `r pct(max(complets$taux_hospit), 1)`
+selon le service ; sa corrélation avec le nombre de passages est de
+`r nb(stats::cor(complets$PASSU, complets$taux_hospit), 0.01)` : la taille du service n'explique pas, à elle
+seule, la part de patients hospitalisés. Parmi les services généraux qui déclarent l'âge, les 80 ans et plus représentent de `r pct(min(gen$part_80), 1)` à `r pct(max(gen$part_80), 1)`
+des passages.
+
+```{r tableau}
+sae |>
+  dplyr::mutate(departement = NOMS_DEP[dep], type = c(GEN = "général", PED = "pédiatrique")[type]) |>
+  dplyr::select(departement, etablissement, type, PASSU, part_80, part_18, taux_hospit, LIT_UHCD) |>
+  tableau() |>
+  gt::cols_label(departement = "Département", etablissement = "Établissement", type = "Service", PASSU = "Passages",
+                 part_80 = "80 ans et +", part_18 = "Moins de 18 ans", taux_hospit = "Hospitalisés",
+                 LIT_UHCD = "Lits UHCD") |>
+  gt::fmt_number(c(PASSU, LIT_UHCD), decimals = 0, sep_mark = " ") |>
+  gt::fmt_percent(c(part_80, part_18, taux_hospit), decimals = 1, dec_mark = ",") |>
+  gt::sub_missing(missing_text = "non déclaré") |>
+  gt::tab_caption("Les services d'urgence des Hauts-de-France en 2023, du plus au moins fréquenté dans chaque département") |>
+  gt::tab_footnote(paste("Hospitalisés : en MCO, SMR, psychiatrie, USLD ou HAD dans le même établissement, ou dans",
+                         "un autre établissement. « Non déclaré » : variable vide dans la SAE."))
+```
+
+## Complétude des nouvelles variables
+
+```{r completude}
+champs <- c(dt80 = "Passages des 80 ans et plus", dt18 = "Passages des moins de 18 ans",
+            dtMCO = "Hospitalisés en MCO", dtEXT = "Hospitalisés dans un autre établissement")
+tibble::tibble(
+  variable = champs,
+  renseignes = sapply(names(champs), \(v) sum(!is.na(sae[[v]]))),
+  part = renseignes / nrow(sae)
+) |>
+  tableau() |>
+  gt::cols_label(variable = "Variable SAE 2023", renseignes = "Services qui la renseignent", part = "Part") |>
+  gt::fmt_percent(part, decimals = 0) |>
+  gt::tab_caption(paste("Sur", nrow(sae), "services d'urgence"))
+```
+
+Pour un observatoire, ce tableau est un point de départ du dialogue avec les établissements : sans ces
+variables, la part des personnes âgées et le taux d'hospitalisation ne peuvent pas être suivis service par
+service. Les écarts entre la SAE et les RPU transmis chaque jour (exhaustivité des RPU) se mesurent avec les
+RPU eux-mêmes, qui ne sont pas publics.
+
+<p style="color:#52514e;font-size:.9em">Définitions des variables : dictionnaire des variables de la SAE
+(bordereau Urgences). Rapport généré depuis `rapports/etablissements_sae.Rmd`.</p>

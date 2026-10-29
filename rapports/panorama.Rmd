@@ -132,6 +132,32 @@ ggplot(tx_dep, aes(annee, taux, colour = dep)) +
        x = NULL, y = "passages pour 10 000 habitants", caption = SOURCE_TAUX)
 ```
 
+```{r carte, fig.height=4.6, fig.width=6.2}
+contours <- readr::read_csv("data/contours_hdf.csv", show_col_types = FALSE, col_types = readr::cols(dep = "c"))
+t_carte <- dplyr::filter(taux, annee == 2023, dep %in% DEPS_HDF)
+etiquettes <- contours |>
+  dplyr::filter(morceau == 1, anneau == 1) |>
+  dplyr::summarise(lon = mean(range(lon)), lat = mean(range(lat)), .by = dep) |>
+  dplyr::left_join(t_carte, by = "dep") |>
+  dplyr::mutate(texte = paste0(NOMS_DEP[dep], "
+", nb(taux)))
+contours |>
+  dplyr::left_join(t_carte, by = "dep") |>
+  ggplot(aes(lon, lat)) +
+  geom_polygon(aes(group = interaction(dep, morceau), subgroup = anneau, fill = taux),
+               colour = "#fcfcfb", linewidth = 0.6) +
+  geom_label(data = etiquettes, aes(label = texte), size = 3.2, label.size = 0, fill = "#fcfcfbcc",
+             colour = "#0b0b0b", lineheight = 0.95) +
+  scale_fill_gradient(low = "#cde0f7", high = "#174f94", labels = axe_nb, name = "pour 10 000 hab.") +
+  coord_quickmap() +
+  theme_void(base_size = 11) +
+  theme(plot.title = element_text(face = "bold", size = 12), plot.title.position = "plot",
+        plot.caption = element_text(colour = "#8a8985", size = 8.5, hjust = 0), legend.position = "right") +
+  labs(title = "Taux de recours aux urgences en 2023",
+       caption = paste0(SOURCE_TAUX, "
+Contours : Etalab d'après OpenStreetMap (ODbL)."))
+```
+
 ```{r taux-texte, include=FALSE}
 t23 <- dplyr::filter(taux, annee == 2023, dep %in% DEPS_HDF) |> dplyr::arrange(taux)
 t19 <- dplyr::filter(taux, annee == 2019, dep %in% DEPS_HDF) |> dplyr::arrange(taux)

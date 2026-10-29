@@ -37,7 +37,7 @@ jobs:
           Rscript scripts/02_simuler_rpu.R
           git diff --exit-code --stat -- data/rpu_defauts_injectes.csv
 
-      - name: Rendu des 17 rapports (panorama, départements, qualité, note ARS en PDF)
+      - name: Rendu des 18 rapports (panorama, départements, qualité, note ARS en PDF)
         run: Rscript scripts/03_rapports.R
 
       - uses: actions/upload-pages-artifact@v3

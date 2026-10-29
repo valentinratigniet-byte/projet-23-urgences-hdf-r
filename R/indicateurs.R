@@ -50,3 +50,27 @@ rapprocher_epidemies <- function(p, e) {
     dplyr::filter(jours == 7) |>
     dplyr::inner_join(e, by = c("dep", "semaine"), relationship = "one-to-many")
 }
+
+# SAE 2023, par service : part des 80 ans et plus, des moins de 18 ans, et taux d'hospitalisation
+# (MCO, SMR-PSY-USLD, HAD de la même entité juridique + autre entité). Sans dtMCO, le taux n'est pas
+# calculable ; les autres destinations vides sont comptées à zéro (service sans unité de ce type).
+indicateurs_sae <- function(sae) {
+  hospit <- rowSums(sae[c("dtMCO", "dtLS", "dtHAD", "dtEXT")], na.rm = TRUE)
+  sae |>
+    dplyr::mutate(
+      part_80 = dt80 / PASSU,
+      part_18 = dt18 / PASSU,
+      hospitalises = ifelse(is.na(dtMCO), NA, hospit),
+      taux_hospit = hospitalises / PASSU,
+      declaration_complete = !is.na(dtMCO) & (type == "PED" | !is.na(dt80)),
+      incoherent = (hospit > PASSU) | dplyr::coalesce(dt80 > PASSU, FALSE) | dplyr::coalesce(dt18 > PASSU, FALSE)
+    )
+}
+
+# Rapprochement des passages annuels DREES et de la somme des services SAE, par département.
+rapprocher_sae <- function(annuel, sae, an = 2023) {
+  dplyr::filter(annuel, annee == an, dep %in% DEPS_HDF) |>
+    dplyr::select(dep, drees = passages) |>
+    dplyr::inner_join(dplyr::summarise(sae, sae = sum(PASSU), services = dplyr::n(), .by = dep), by = "dep") |>
+    dplyr::mutate(ecart = drees / sae - 1)
+}
