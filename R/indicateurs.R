@@ -10,6 +10,12 @@ passages_annuels <- function(p) {
     dplyr::mutate(evolution = passages / dplyr::lag(passages) - 1, .by = dep)
 }
 
+# Taux de recours : passages de l'année pour 10 000 habitants (population INSEE au 1er janvier).
+taux_recours <- function(annuel, population) {
+  dplyr::inner_join(annuel, population, by = c("dep", "annee")) |>
+    dplyr::mutate(taux = 1e4 * passages / population)
+}
+
 moyenne_mobile <- function(x, k = 7) slider::slide_dbl(x, mean, .before = k - 1, .complete = TRUE)
 
 # Indice = moyenne du jour / moyenne globale du département (1 = journée moyenne).

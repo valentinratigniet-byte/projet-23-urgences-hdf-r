@@ -24,9 +24,13 @@ rang <- which(rev(ind$finess) == f)   # 1 = meilleur score
 LIBELLES <- c(
   dp_vide = "Diagnostic principal vide", ccmu_vide = "Gravité CCMU vide",
   mode_sortie_vide = "Mode de sortie vide", code_postal_vide = "Code postal vide",
+  destination_vide = "Destination vide pour un patient hospitalisé",
   dp_invalide = "Diagnostic hors format CIM-10", sortie_avant_entree = "Sortie avant l'entrée",
-  duree_aberrante = "Séjour de plus de 72 h", age_aberrant = "Âge hors 0-120 ans",
-  sexe_invalide = "Sexe hors nomenclature (M, F, I)", deces_ccmu1 = "Décès d'un patient classé CCMU 1",
+  duree_aberrante = "Séjour de plus de 72 h",
+  age_aberrant = "Date de naissance impossible (après l'entrée ou plus de 120 ans)",
+  sexe_invalide = "Sexe hors nomenclature (M, F, I, X)", deces_ccmu1 = "Décès d'un patient classé CCMU 1",
+  provenance_incoherente = "Provenance contraire au mode d'entrée",
+  orientation_incoherente = "Orientation contraire au mode de sortie",
   doublon = "Passage transmis deux fois", trou_transmission = "Jour sans aucun passage transmis"
 )
 CONSEILS <- c(
@@ -34,11 +38,14 @@ CONSEILS <- c(
   ccmu_vide = "Saisir la CCMU dès l'accueil infirmier d'orientation (IOA).",
   mode_sortie_vide = "Bloquer la clôture du passage sans mode de sortie.",
   code_postal_vide = "Reprendre l'adresse depuis le dossier administratif (identito-vigilance).",
+  destination_vide = "Rendre la destination (MCO, SSR, SLD, psychiatrie) obligatoire pour toute mutation ou tout transfert.",
+  provenance_incoherente = "Ne proposer dans le logiciel que les provenances compatibles avec le mode d'entrée.",
+  orientation_incoherente = "Ne proposer que les orientations compatibles avec le mode de sortie ; aucune en cas de décès.",
   dp_invalide = "Imposer la sélection du DP dans le thésaurus CIM-10 plutôt qu'en texte libre.",
   sortie_avant_entree = "Contrôler l'horodatage à la clôture ; vérifier les dossiers saisis a posteriori.",
   duree_aberrante = "Clôturer les dossiers restés ouverts (patients sortis non enregistrés).",
   age_aberrant = "Contrôler la date de naissance à l'enregistrement.",
-  sexe_invalide = "Aligner la nomenclature du logiciel sur celle du RPU (M, F, I).",
+  sexe_invalide = "Aligner la nomenclature du logiciel sur celle du RPU (M, F, I ; X si inconnu).",
   deces_ccmu1 = "Revoir la cotation : un décès est incompatible avec une CCMU 1.",
   doublon = "Vérifier le circuit d'envoi : un même passage ne doit être transmis qu'une fois.",
   trou_transmission = "Mettre en place une alerte quand un jour n'est pas transmis ; renvoyer les jours manquants."
@@ -76,8 +83,8 @@ moy <- colMeans(ind[c("exhaustivite", "completude", "coherence", "exploitabilite
 tibble::tibble(
   dimension = c("Exhaustivité", "Complétude", "Cohérence", "Exploitabilité du DP"),
   definition = c("jours de l'année avec au moins un passage transmis",
-                 "champs DP, CCMU, mode de sortie et code postal renseignés",
-                 "passages sans incohérence (dates, âge, sexe, décès, doublon)",
+                 "DP, CCMU, mode de sortie, code postal et destination (si hospitalisé) renseignés",
+                 "passages sans incohérence (dates, âge, sexe, provenance, orientation, décès, doublon)",
                  "passages avec un DP renseigné et au format CIM-10"),
   valeur = unlist(e[c("exhaustivite", "completude", "coherence", "exploitabilite_dp")]),
   region = moy,
@@ -168,10 +175,11 @@ a_etab |>
   dplyr::slice_head(n = 5, by = type_defaut) |>
   dplyr::left_join(rpu[!duplicated(rpu$id_passage), ], by = c("id_passage", "finess")) |>
   dplyr::transmute(anomalie = LIBELLES[type_defaut], id_passage, entree = format(entree, "%d/%m/%Y %H:%M"),
-                   age, sexe, ccmu, dp, mode_sortie) |>
+                   naissance, sexe, ccmu, dp, mode_sortie, destination, orientation) |>
   tableau() |>
-  gt::cols_label(anomalie = "Anomalie", id_passage = "Passage", entree = "Entrée", age = "Âge", sexe = "Sexe",
-                 ccmu = "CCMU", dp = "DP", mode_sortie = "Sortie") |>
+  gt::cols_label(anomalie = "Anomalie", id_passage = "Passage", entree = "Entrée", naissance = "Naissance",
+                 sexe = "Sexe", ccmu = "CCMU", dp = "DP", mode_sortie = "Sortie", destination = "Dest.",
+                 orientation = "Orient.") |>
   gt::sub_missing(missing_text = "—") |>
   gt::tab_caption("Cinq exemples par anomalie prioritaire ; la liste complète se calcule avec detecter_anomalies()")
 ```

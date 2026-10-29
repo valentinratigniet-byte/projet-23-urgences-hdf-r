@@ -1,0 +1,111 @@
+---
+title: "Activité des urgences vue par les RPU"
+subtitle: "Indicateurs par établissement, année 2023 (données simulées)"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    css: style.css
+    self_contained: true
+---
+
+```{r setup, include=FALSE}
+source("rapports/_commun.R", encoding = "UTF-8")
+rpu <- lire_rpu("data/rpu_simule_2023.csv.gz")
+anomalies <- detecter_anomalies(rpu)
+ind <- indicateurs_activite_rpu(rpu, anomalies)
+e <- ind[ind$finess == "Ensemble", ]
+h <- \(x) sprintf("%d h %02d", floor(x), round(60 * (x %% 1)))
+```
+
+<div class="avertissement">
+<b>Données simulées : la méthode, pas des résultats.</b> Les RPU réels sont confidentiels. Les 8 établissements
+sont fictifs et simulés avec les <b>mêmes paramètres</b> : leurs écarts ne viennent que du hasard et de la qualité
+de leurs données, pas d'une différence réelle de fonctionnement. Les indicateurs sont ceux qu'un observatoire
+calcule sur les RPU ; chacun n'utilise que les passages où le champ concerné est exploitable.
+</div>
+
+<div class="chiffres">
+<div class="chiffre"><span class="valeur">`r h(e$duree_mediane_h)`</span><span class="libelle">durée médiane de passage (`r h(e$duree_mediane_hospit_h)` si hospitalisé)</span></div>
+<div class="chiffre"><span class="valeur">`r pct(e$plus_4h, 1)`</span><span class="libelle">des passages durent plus de 4 heures</span></div>
+<div class="chiffre"><span class="valeur">`r pct(e$hospitalisation, 1)`</span><span class="libelle">des passages se terminent par une hospitalisation</span></div>
+<div class="chiffre"><span class="valeur">`r pct(e$plus_75_ans, 1)`</span><span class="libelle">des patients ont 75 ans ou plus</span></div>
+</div>
+
+## Indicateurs par établissement
+
+```{r tableau}
+ind |>
+  dplyr::mutate(finess = ifelse(finess == "Ensemble", "Ensemble des 8", finess)) |>
+  dplyr::select(finess, passages, plus_75_ans, nuit_20h_8h, transport_sanitaire, ccmu_4_5, hospitalisation,
+                partis_sans_soins, duree_mediane_h, plus_4h) |>
+  tableau() |>
+  gt::cols_label(finess = "Établissement", passages = "Passages", plus_75_ans = "75 ans et +",
+                 nuit_20h_8h = "Arrivée 20 h-8 h", transport_sanitaire = "Transport sanitaire",
+                 ccmu_4_5 = "CCMU 4-5", hospitalisation = "Hospitalisés", partis_sans_soins = "Partis sans soins",
+                 duree_mediane_h = "Durée médiane", plus_4h = "Plus de 4 h") |>
+  gt::fmt_number(passages, decimals = 0, sep_mark = " ") |>
+  gt::fmt_percent(c(plus_75_ans, nuit_20h_8h, transport_sanitaire, ccmu_4_5, hospitalisation, partis_sans_soins, plus_4h),
+                  decimals = 1, dec_mark = ",") |>
+  gt::text_transform(\(x) h(as.numeric(x)), locations = gt::cells_body(columns = duree_mediane_h)) |>
+  gt::tab_style(gt::cell_text(weight = "bold"), gt::cells_body(rows = finess == "Ensemble des 8")) |>
+  gt::tab_caption("Indicateurs d'activité 2023 (extrait simulé)") |>
+  gt::tab_footnote(paste("Transport sanitaire : ambulance, VSAV, SMUR ou hélicoptère. Partis sans soins : PSA, fugue",
+                         "ou réorientation. CCMU 4-5 : pronostic vital engagé, parmi les passages à CCMU renseignée."))
+```
+
+## Durées de passage
+
+```{r durees, fig.height=3.6}
+cl <- classes_duree(rpu, anomalies) |>
+  dplyr::left_join(dplyr::distinct(rpu, finess, etablissement), by = "finess")
+ggplot(cl, aes(part, factor(finess, rev(sort(unique(finess)))), fill = classe)) +
+  geom_col(width = 0.65, colour = "#fcfcfb", linewidth = 0.5, position = position_stack(reverse = TRUE)) +
+  scale_fill_manual(values = c("#cde0f7", "#8ab8ec", "#3d82d6", "#174f94"), name = NULL) +
+  scale_x_continuous(labels = axe_pct, expand = expansion(mult = c(0, 0.01))) +
+  labs(title = "Répartition des durées de passage par établissement",
+       subtitle = "Passages dont les dates d'entrée et de sortie sont cohérentes",
+       x = NULL, y = NULL, caption = "Source : extrait RPU simulé 2023.") +
+  guides(fill = guide_legend(nrow = 1))
+```
+
+La durée se mesure de l'enregistrement administratif à la sortie de la zone de soins ; un patient admis en
+UHCD est considéré comme sorti des urgences (règle FEDORU). Les patients hospitalisés restent plus longtemps
+(médiane de `r h(e$duree_mediane_hospit_h)`, contre `r h(e$duree_mediane_domicile_h)` pour un retour à domicile).
+
+## Heures d'arrivée
+
+```{r horaire, fig.height=3.2}
+ph <- profil_horaire(rpu)
+ggplot(ph, aes(heure, part)) +
+  geom_col(fill = COULEURS_DEP[["59"]], width = 0.75) +
+  scale_x_continuous(breaks = seq(0, 23, 2), labels = \(x) paste0(x, " h")) +
+  scale_y_continuous(labels = axe_pct, expand = expansion(mult = c(0, 0.08))) +
+  labs(title = "Part des arrivées selon l'heure d'enregistrement",
+       x = NULL, y = NULL, caption = "Source : extrait RPU simulé 2023.")
+```
+
+## Ce que la qualité des données change aux indicateurs
+
+Un indicateur calculé sur des champs vides ou incohérents serait faux sans que rien ne le signale. Chaque
+indicateur écarte donc les passages inexploitables, et la part écartée est publiée avec lui.
+
+```{r ecartes}
+ind |>
+  dplyr::filter(finess != "Ensemble") |>
+  dplyr::select(finess, ecartes_duree, ecartes_ccmu, ecartes_sortie) |>
+  dplyr::arrange(dplyr::desc(ecartes_ccmu)) |>
+  tableau() |>
+  gt::cols_label(finess = "Établissement", ecartes_duree = "Durée (dates incohérentes)",
+                 ecartes_ccmu = "Gravité (CCMU vide)", ecartes_sortie = "Hospitalisation (mode de sortie vide)") |>
+  gt::fmt_percent(-finess, decimals = 1, dec_mark = ",") |>
+  gt::tab_caption("Part des passages écartés de chaque indicateur") |>
+  gt::tab_footnote("Un patient parti sans soins (PSA, fugue, réorientation) sans CCMU n'est pas écarté : la règle FEDORU l'en dispense.")
+```
+
+Les établissements dont la qualité est la plus faible perdent jusqu'à
+**`r pct(max(ind$ecartes_ccmu[ind$finess != "Ensemble"]), 0.1)`** de leurs passages pour l'indicateur de gravité.
+Le retour qualité à chaque établissement (rapports par établissement) sert aussi à fiabiliser ces chiffres.
+
+<p style="color:#52514e;font-size:.9em">Champs et règles : format national RPU V2006 et règles de codage
+FEDORU ; détail dans `docs/catalogue_defauts.md`. Rapport généré depuis `rapports/activite_rpu.Rmd`.</p>

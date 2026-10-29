@@ -34,3 +34,11 @@ test_that("rapprochement hebdomadaire : semaines complètes seulement", {
   expect_equal(nrow(r), 1)
   expect_equal(r$passages, 70)
 })
+
+test_that("taux de recours pour 10 000 habitants", {
+  annuel <- tibble::tibble(dep = c("59", "59"), annee = c(2022, 2023), passages = c(850, 900))
+  pop <- tibble::tibble(dep = "59", annee = 2023, population = 3000)
+  t <- taux_recours(annuel, pop)
+  expect_equal(nrow(t), 1)            # 2022 sans population : écartée
+  expect_equal(t$taux, 3000)
+})

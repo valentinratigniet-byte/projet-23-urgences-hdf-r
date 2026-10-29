@@ -17,6 +17,8 @@ annuel <- passages_annuels(dplyr::bind_rows(passages, region))
 a <- \(x, an) annuel$passages[annuel$dep == x & annuel$annee == an]
 evol <- sapply(c("02", "59", "60", "62", "80", "HDF", "FR"), \(x) a(x, 2023) / a(x, 2019) - 1)
 hausse <- names(which.max(evol[1:5])); baisse <- names(which.min(evol[1:5]))
+seul_en_hausse <- sum(evol[1:5] > 0) == 1
+t19 <- taux_recours(annuel, population) |> dplyr::filter(annee == 2019, dep %in% DEPS_HDF) |> dplyr::arrange(taux)
 jours <- indice_jour_semaine(region)
 lundi <- jours$indice[jours$jour == "lundi"] - 1
 n_lundis <- sum(lubridate::wday(utils::head(jours_pic(region, q = 0.995), 10)$date, week_start = 1) == 1)
@@ -53,9 +55,11 @@ soit `r nb(a("HDF", 2023) / 365)` par jour. L'activité n'a pas retrouvé son ni
 après une chute de `r pct(abs(a("HDF", 2020) / a("HDF", 2019) - 1), 1)` en 2020.</div>
 
 <div class="constat"><b class="fort">Des trajectoires opposées selon les départements.</b>
-`r NOMS_DEP[[hausse]]` : `r pct(evol[[hausse]], signe = TRUE)` depuis 2019, seul département au-dessus de
-son niveau d'avant-crise ; `r NOMS_DEP[[baisse]]` : `r pct(evol[[baisse]], signe = TRUE)`. Une moyenne
-régionale masque ces écarts, qui comptent pour l'allocation des moyens.</div>
+`r NOMS_DEP[[hausse]]` : `r pct(evol[[hausse]], signe = TRUE)` depuis 2019`r if (seul_en_hausse) ", seul département au-dessus de son niveau d'avant-crise" else ""`,
+`r if (t19$dep[1] == hausse) "en partant du taux de recours le plus bas de la région" else "avec un taux de recours en 2019 de"`
+(`r nb(t19$taux[t19$dep == hausse])` passages pour 10 000 habitants en 2019, contre `r nb(t19$taux[5])` dans `r AVEC_ARTICLE[[t19$dep[5]]]`) ;
+`r NOMS_DEP[[baisse]]` : `r pct(evol[[baisse]], signe = TRUE)`. Une moyenne régionale masque ces écarts, qui
+comptent pour l'allocation des moyens.</div>
 
 <div class="constat"><b class="fort">Le lundi pèse `r pct(lundi, 1, signe = TRUE)`</b> par rapport à
 une journée moyenne, et `r n_lundis` des 10 journées les plus chargées de 2017-2023 sont des lundis.
@@ -78,8 +82,8 @@ ggplot(indice, aes(annee, indice, colour = dep)) +
 ## Une limite
 
 Les volumes journaliers sont des **estimations** de la DREES (RPU calés sur les totaux annuels de la SAE) :
-ils sont solides pour les tendances et les profils, pas pour juger une journée isolée. Les comparaisons
-entre départements ne rapportent pas les passages à la population.
+ils sont solides pour les tendances et les profils, pas pour juger une journée isolée. Le taux de recours
+compte les passages dans le département de l'établissement : il ne corrige pas les déplacements de patients.
 
 ## Une recommandation
 

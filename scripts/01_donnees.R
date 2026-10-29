@@ -18,8 +18,19 @@ passages_hdf <- passages |>
 
 epidemies <- controler_epidemies(lire_epidemies()) |> dplyr::arrange(pathologie, dep, semaine)
 
+# Population de référence : mêmes départements que les passages (la France sur les mêmes 93 départements).
+population <- controler_population(lire_population())
+stopifnot("population connue pour chaque département de la série France" = all(complets %in% population$dep))
+population_hdf <- population |>
+  dplyr::filter(dep %in% DEPS_HDF) |>
+  dplyr::bind_rows(population |> dplyr::filter(dep %in% complets) |>
+                     dplyr::summarise(population = sum(population), .by = annee) |> dplyr::mutate(dep = "FR")) |>
+  dplyr::arrange(dep, annee)
+
 readr::write_csv(passages_hdf, "data/passages_hdf.csv")
 readr::write_csv(epidemies, "data/epidemies_hdf.csv")
+readr::write_csv(population_hdf, "data/population_hdf.csv")
 
-message(sprintf("passages : %d lignes (%s → %s) ; épidémies : %d lignes",
-                nrow(passages_hdf), min(passages_hdf$date), max(passages_hdf$date), nrow(epidemies)))
+message(sprintf("passages : %d lignes (%s → %s) ; épidémies : %d lignes ; population : %d lignes",
+                nrow(passages_hdf), min(passages_hdf$date), max(passages_hdf$date), nrow(epidemies),
+                nrow(population_hdf)))

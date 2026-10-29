@@ -7,7 +7,11 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,
 
 passages <- readr::read_csv("data/passages_hdf.csv", show_col_types = FALSE, col_types = readr::cols(dep = "c"))
 epidemies <- readr::read_csv("data/epidemies_hdf.csv", show_col_types = FALSE, col_types = readr::cols(dep = "c"))
+population <- readr::read_csv("data/population_hdf.csv", show_col_types = FALSE, col_types = readr::cols(dep = "c"))
+population <- dplyr::bind_rows(population, population |> dplyr::filter(dep %in% DEPS_HDF) |>
+  dplyr::summarise(population = sum(population), .by = annee) |> dplyr::mutate(dep = "HDF"))
 NOMS_DEP <- c("02" = "Aisne", "59" = "Nord", "60" = "Oise", "62" = "Pas-de-Calais", "80" = "Somme", "FR" = "France")
+AVEC_ARTICLE <- c("02" = "l'Aisne", "59" = "le Nord", "60" = "l'Oise", "62" = "le Pas-de-Calais", "80" = "la Somme")
 
 # Palette catégorielle de référence (validée CVD, ordre fixe) ; la France est la référence neutre.
 COULEURS_DEP <- c("59" = "#2a78d6", "62" = "#eb6834", "60" = "#1baf7a", "02" = "#eda100", "80" = "#e87ba4",
@@ -34,6 +38,7 @@ axe_pct <- scales::label_percent(decimal.mark = ",")
 
 SOURCE_DREES <- "Source : DREES, séries longues des passages aux urgences 2017-2023 (valeurs journalières estimées)."
 SOURCE_ODISSE <- "Sources : DREES ; Santé publique France, ODISSE (taux pour 100 000 passages)."
+SOURCE_TAUX <- "Sources : DREES (passages) ; INSEE, estimations de population au 1er janvier (édition du 23/12/2025)."
 
 tableau <- function(d) {
   gt::gt(d) |>

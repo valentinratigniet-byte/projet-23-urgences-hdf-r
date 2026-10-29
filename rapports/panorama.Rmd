@@ -23,6 +23,8 @@ evol_2019 <- total_2023 / a("HDF", 2019) - 1
 evol_fr <- a("FR", 2023) / a("FR", 2019) - 1
 chute_2020 <- a("HDF", 2020) / a("HDF", 2019) - 1
 part_nord <- a("59", 2023) / total_2023
+taux <- taux_recours(annuel, population)
+tx <- \(d, an) taux$taux[taux$dep == d & taux$annee == an]
 ```
 
 <div class="avertissement">
@@ -36,6 +38,7 @@ mais une journée isolée ne doit pas être lue comme un comptage exact.
 <div class="chiffre"><span class="valeur">`r nb(total_2023 / 365)`</span><span class="libelle">passages par jour en moyenne en 2023</span></div>
 <div class="chiffre"><span class="valeur">`r pct(evol_2019, signe = TRUE)`</span><span class="libelle">entre 2019 et 2023 (France : `r pct(evol_fr, signe = TRUE)`)</span></div>
 <div class="chiffre"><span class="valeur">`r pct(part_nord, 1)`</span><span class="libelle">des passages régionaux sont dans le Nord</span></div>
+<div class="chiffre"><span class="valeur">`r nb(tx("HDF", 2023))`</span><span class="libelle">passages pour 10 000 habitants en 2023 (France : `r nb(tx("FR", 2023))`)</span></div>
 </div>
 
 ## Évolution depuis 2017
@@ -100,17 +103,47 @@ annuel |>
   dplyr::filter(dep != "FR", annee %in% c(2019, 2022, 2023)) |>
   dplyr::select(dep, libelle_dep, annee, passages) |>
   tidyr::pivot_wider(names_from = annee, values_from = passages, names_prefix = "a") |>
-  dplyr::mutate(evol = a2023 / a2019 - 1, dep = factor(dep, c("02", "59", "60", "62", "80", "HDF"))) |>
+  dplyr::mutate(evol = a2023 / a2019 - 1) |>
+  dplyr::left_join(dplyr::filter(taux, annee == 2023) |> dplyr::select(dep, taux), by = "dep") |>
+  dplyr::mutate(dep = factor(dep, c("02", "59", "60", "62", "80", "HDF"))) |>
   dplyr::arrange(dep) |>
   dplyr::select(-dep) |>
   tableau() |>
   gt::cols_label(libelle_dep = "Département", a2019 = "2019", a2022 = "2022", a2023 = "2023",
-                 evol = "Évolution 2019-2023") |>
+                 evol = "Évolution 2019-2023", taux = "Pour 10 000 hab. (2023)") |>
+  gt::fmt_number(taux, decimals = 0, sep_mark = " ") |>
   gt::fmt_number(c(a2019, a2022, a2023), decimals = 0, sep_mark = " ") |>
   gt::fmt_percent(evol, decimals = 1, dec_mark = ",", force_sign = TRUE) |>
   gt::tab_style(gt::cell_text(weight = "bold"), gt::cells_body(rows = libelle_dep == "Hauts-de-France")) |>
   gt::tab_caption("Passages annuels par département")
 ```
+
+```{r taux, fig.height=4.2}
+tx_dep <- dplyr::filter(taux, dep != "HDF")
+ggplot(tx_dep, aes(annee, taux, colour = dep)) +
+  geom_line(aes(linetype = dep == "FR"), linewidth = 0.7, show.legend = FALSE) +
+  geom_point(size = 2.2) +
+  scale_colour_manual(values = COULEURS_DEP, labels = NOMS_DEP, name = NULL) +
+  scale_linetype_manual(values = c(`FALSE` = "solid", `TRUE` = "22")) +
+  scale_x_continuous(breaks = 2017:2023) +
+  scale_y_continuous(labels = axe_nb) +
+  labs(title = "Taux de recours : passages pour 10 000 habitants",
+       subtitle = "France : mêmes 93 départements que la série des passages (tirets)",
+       x = NULL, y = "passages pour 10 000 habitants", caption = SOURCE_TAUX)
+```
+
+```{r taux-texte, include=FALSE}
+t23 <- dplyr::filter(taux, annee == 2023, dep %in% DEPS_HDF) |> dplyr::arrange(taux)
+t19 <- dplyr::filter(taux, annee == 2019, dep %in% DEPS_HDF) |> dplyr::arrange(taux)
+```
+
+Rapportés à la population, les écarts changent de sens. En 2023, **`r AVEC_ARTICLE[[t23$dep[1]]]`**
+a le taux le plus bas (`r nb(t23$taux[1])` passages pour 10 000 habitants) et **`r AVEC_ARTICLE[[t23$dep[5]]]`**
+le plus haut (`r nb(t23$taux[5])`). En 2019, le taux le plus bas était celui
+`r if (t19$dep[1] == "62") "du Pas-de-Calais" else paste("de", AVEC_ARTICLE[[t19$dep[1]]])`
+(`r nb(t19$taux[1])`)`r if (t19$dep[1] == "62") " : sa forte hausse depuis est en partie un rattrapage" else ""`. Un passage est compté dans le département de l'établissement, pas dans celui
+du patient : le taux ne corrige pas les déplacements entre départements (vers la métropole lilloise,
+la Belgique ou l'Île-de-France).
 
 ## Saisonnalité
 
@@ -214,5 +247,5 @@ jours_pic(region, q = 0.995) |>
 ## Limites
 
 - Les volumes journaliers sont estimés par la DREES ; les totaux annuels, eux, sont ceux de la SAE.
-- Pas de rapport à la population : les comparaisons entre départements passent par un indice base 100 en 2019.
+- Les taux de recours rapportent les passages d'un département à sa population, sans corriger les déplacements de patients entre départements ; la population vient des estimations INSEE au 1er janvier (édition du 23/12/2025, dont les années les plus récentes sont révisables).
 - Les épidémies ne sont observées que de 2021 à 2023, et sous forme de taux pour 100 000 passages.

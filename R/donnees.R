@@ -12,6 +12,8 @@ JEUX_ODISSE <- c(
   bronchiolite = "bronchiolite-passages-aux-urgences-et-actes-sos-medecins-departement",
   gastro       = "gastro-enterite-aigue-passages-aux-urgences-et-actes-sos-medecins-departement"
 )
+# INSEE, estimations de population au 1er janvier par département (édition du 23/12/2025, années récentes révisables).
+URL_INSEE_POP <- "https://www.insee.fr/fr/statistiques/fichier/8721456/estim-pop-dep-sexe-gca-1975-2026.xlsx"
 
 # Télécharge une fois, puis relit le cache local (data/raw/ n'est pas versionné).
 telecharger <- function(url, fichier) {
@@ -44,6 +46,17 @@ lire_epidemies <- function(dossier = "data/raw") {
   }) |> purrr::list_rbind()
 }
 
+# Population au 1er janvier, une ligne par département et par année (un onglet par année dans le fichier).
+lire_population <- function(annees = 2017:2023, dossier = "data/raw") {
+  f <- telecharger(URL_INSEE_POP, file.path(dossier, "insee_population_dep.xlsx"))
+  purrr::map(annees, function(an) {
+    # 5 lignes d'en-tête ; colonnes : code, libellé, 5 classes d'âge, total (« Ensemble »)
+    d <- readxl::read_excel(f, sheet = as.character(an), skip = 5, col_names = FALSE, .name_repair = "minimal")
+    d <- d[grepl("^([0-9]{2,3}|2A|2B)$", d[[1]]), 1:8]
+    tibble::tibble(dep = d[[1]], annee = an, population = as.numeric(d[[8]]))
+  }) |> purrr::list_rbind()
+}
+
 # Contrôles d'entrée : arrête le traitement si la source a changé de forme.
 controler_passages <- function(p) {
   jours <- seq(as.Date("2017-01-01"), as.Date("2023-12-31"), by = "day")
@@ -66,4 +79,14 @@ controler_epidemies <- function(e) {
     "aucun doublon" = !anyDuplicated(e[c("semaine", "dep", "pathologie")])
   )
   invisible(e)
+}
+
+controler_population <- function(pop, annees = 2017:2023) {
+  hdf <- pop[pop$dep %in% DEPS_HDF, ]
+  stopifnot(
+    "5 départements HDF chaque année" = nrow(hdf) == 5 * length(annees),
+    "aucun doublon" = !anyDuplicated(pop[c("dep", "annee")]),
+    "populations HDF plausibles (300 000 à 3 millions)" = all(hdf$population > 3e5 & hdf$population < 3e6)
+  )
+  invisible(pop)
 }

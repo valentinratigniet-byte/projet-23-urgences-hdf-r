@@ -15,8 +15,8 @@ args <- commandArgs(trailingOnly = TRUE)   # ex. : Rscript scripts/03_rapports.R
 tous <- length(args) == 0
 
 dir.create("site", showWarnings = FALSE)
-file.copy("rapports/index.html", "site/index.html", overwrite = TRUE)
-file.copy("docs/architecture.html", "site/architecture.html", overwrite = TRUE)
+invisible(file.copy("rapports/index.html", "site/index.html", overwrite = TRUE))
+invisible(file.copy("docs/architecture.html", "site/architecture.html", overwrite = TRUE))
 
 if (tous || "panorama" %in% args) rendre("panorama.Rmd", "panorama.html")
 if (tous || "departement" %in% args) {
@@ -26,6 +26,7 @@ if (tous || "qualite" %in% args) {
   source("R/simulation_rpu.R")
   for (f in ETABLISSEMENTS$finess) rendre("qualite.Rmd", sprintf("qualite/%s.html", f), list(finess = f))
 }
+if (tous || "activite" %in% args) rendre("activite_rpu.Rmd", "activite_rpu.html")
 if (tous || "note" %in% args) {
   rendre("note_ars.Rmd", "note_ars.html")
   # PDF sans LaTeX : impression de la page HTML par Chrome headless.

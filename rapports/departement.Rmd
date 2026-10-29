@@ -24,6 +24,9 @@ evol <- \(x) a(x, 2023) / a(x, 2019) - 1
 serie <- passages |> dplyr::filter(dep == d)
 part <- a(d, 2023) / a("HDF", 2023)
 rang <- rank(-sapply(c("02", "59", "60", "62", "80"), evol))[[d]]
+taux <- taux_recours(annuel, population)
+tx <- \(x, an = 2023) taux$taux[taux$dep == x & taux$annee == an]
+rang_taux <- rank(-sapply(DEPS_HDF, tx))[[d]]
 ```
 
 <div class="avertissement">
@@ -36,6 +39,7 @@ fiables pour les tendances et la saisonnalité, pas pour lire une journée isol�
 <div class="chiffre"><span class="valeur">`r nb(a(d, 2023) / 365)`</span><span class="libelle">passages par jour en moyenne en 2023</span></div>
 <div class="chiffre"><span class="valeur">`r pct(evol(d), signe = TRUE)`</span><span class="libelle">entre 2019 et 2023 (région : `r pct(evol("HDF"), signe = TRUE)`, France : `r pct(evol("FR"), signe = TRUE)`)</span></div>
 <div class="chiffre"><span class="valeur">`r rang`<sup>`r if (rang == 1) "er" else "e"`</sup> / 5</span><span class="libelle">rang régional de l'évolution 2019-2023</span></div>
+<div class="chiffre"><span class="valeur">`r nb(tx(d))`</span><span class="libelle">passages pour 10 000 habitants en 2023, `r rang_taux`<sup>`r if (rang_taux == 1) "er" else "e"`</sup> / 5 (région : `r nb(tx("HDF"))`, France : `r nb(tx("FR"))`)</span></div>
 </div>
 
 ## Évolution comparée à la France
@@ -61,12 +65,13 @@ annuel |>
   dplyr::select(annee, libelle, evolution) |>
   tidyr::pivot_wider(names_from = libelle, values_from = evolution) |>
   dplyr::left_join(dplyr::select(dplyr::filter(annuel, dep == d), annee, passages), by = "annee") |>
-  dplyr::relocate(annee, passages, dplyr::all_of(nom), "Hauts-de-France", France) |>
+  dplyr::left_join(dplyr::select(dplyr::filter(taux, dep == d), annee, taux), by = "annee") |>
+  dplyr::relocate(annee, passages, taux, dplyr::all_of(nom), "Hauts-de-France", France) |>
   tableau() |>
-  gt::cols_label(annee = "Année", passages = paste("Passages", nom)) |>
-  gt::tab_spanner("Évolution sur un an", columns = -c(annee, passages)) |>
-  gt::fmt_number(passages, decimals = 0, sep_mark = " ") |>
-  gt::fmt_percent(-c(annee, passages), decimals = 1, dec_mark = ",", force_sign = TRUE) |>
+  gt::cols_label(annee = "Année", passages = paste("Passages", nom), taux = "Pour 10 000 hab.") |>
+  gt::tab_spanner("Évolution sur un an", columns = -c(annee, passages, taux)) |>
+  gt::fmt_number(c(passages, taux), decimals = 0, sep_mark = " ") |>
+  gt::fmt_percent(-c(annee, passages, taux), decimals = 1, dec_mark = ",", force_sign = TRUE) |>
   gt::sub_missing(missing_text = "") |>
   gt::tab_caption(paste("Passages annuels dans le département", nom))
 ```
