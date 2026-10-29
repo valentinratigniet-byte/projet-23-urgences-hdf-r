@@ -28,6 +28,11 @@ if (tous || "qualite" %in% args) {
 }
 if (tous || "activite" %in% args) rendre("activite_rpu.Rmd", "activite_rpu.html")
 if (tous || "sae" %in% args) rendre("etablissements_sae.Rmd", "etablissements_sae.html")
+# Application Shiny exportée en site statique (R en WebAssembly) ; ses données : scripts/04_donnees_app.R.
+if (tous || "app" %in% args) {
+  shinylive::export("app", file.path("site", "app"), quiet = TRUE)
+  message("  app/")
+}
 if (tous || "note" %in% args) {
   rendre("note_ars.Rmd", "note_ars.html")
   # PDF sans LaTeX : impression de la page HTML par Chrome headless.

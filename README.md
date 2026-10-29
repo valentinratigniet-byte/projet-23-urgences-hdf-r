@@ -3,7 +3,7 @@
 [![CI](https://github.com/valentinratigniet-byte/projet-23-urgences-hdf-r/actions/workflows/ci.yml/badge.svg)](https://github.com/valentinratigniet-byte/projet-23-urgences-hdf-r/actions/workflows/ci.yml)
 ![R 4.5](https://img.shields.io/badge/R-4.5-276DC3) ![renv](https://img.shields.io/badge/versions-renv-555) ![Licence MIT](https://img.shields.io/badge/licence-MIT-555)
 
-**Rapports en ligne : https://valentinratigniet-byte.github.io/projet-23-urgences-hdf-r/**
+**Rapports en ligne : https://valentinratigniet-byte.github.io/projet-23-urgences-hdf-r/** · **[Explorateur Shiny](https://valentinratigniet-byte.github.io/projet-23-urgences-hdf-r/app/)**
 
 Indicateurs d'activité des urgences, contrôle qualité des données RPU et restitution aux décideurs, en
 R du téléchargement des sources jusqu'aux rapports paramétrés, testé et publié par la CI.
@@ -19,6 +19,7 @@ Hauts-de-France.
 |---|---|
 | Indicateurs d'activité | [Panorama régional](https://valentinratigniet-byte.github.io/projet-23-urgences-hdf-r/panorama.html) (volumes, taux de recours, saisonnalité, épidémies) et 5 rapports départementaux paramétrés (`params: dep`) ; [indicateurs issus des RPU](https://valentinratigniet-byte.github.io/projet-23-urgences-hdf-r/activite_rpu.html) (durée de passage, hospitalisation, gravité, âge, heures d'arrivée) |
 | Qualité des données | [Services d'urgence réels (SAE 2023)](https://valentinratigniet-byte.github.io/projet-23-urgences-hdf-r/etablissements_sae.html) : rapprochement avec la DREES, complétude des déclarations ; 8 rapports par établissement paramétrés (`params: finess`, extrait simulé) : 4 critères de qualité, score, actions prioritaires, passages à corriger |
+| Exploration | [Application Shiny](https://valentinratigniet-byte.github.io/projet-23-urgences-hdf-r/app/) : courbes et taux de recours par département et par période, services SAE filtrables, qualité de chaque établissement simulé |
 | Restitution | [Note d'une page en PDF](https://valentinratigniet-byte.github.io/projet-23-urgences-hdf-r/note_ars.pdf) : 3 constats chiffrés, 1 limite, 1 recommandation |
 
 ## Résultats (données réelles DREES)
@@ -105,6 +106,7 @@ flowchart LR
     IRPU --> RAP
     TST --> CI["CI + GitHub Pages"]
     RAP --> CI
+    APP["Application Shiny<br/>shinylive"] --> CI
 ```
 
 ## Structure
@@ -115,9 +117,10 @@ R/simulation_rpu.R   générateur RPU reproductible (graine fixe) + injection tr
 R/qualite.R          lecture RPU, 15 contrôles, score par établissement, actions prioritaires
 R/indicateurs.R      passages annuels, taux de recours, saisonnalité, pics, épidémies, indicateurs SAE
 R/indicateurs_rpu.R  durées de passage, hospitalisation, CCMU, âges, heures d'arrivée, part écartée
+app/app.R            application Shiny (base R + ggplot2) ; données préparées dans app/data/
 rapports/            panorama (avec carte), departement (params: dep), etablissements_sae, qualite (params:
                      finess), activite_rpu, note_ars
-scripts/             01_donnees.R, 02_simuler_rpu.R, 03_rapports.R, tests.R
+scripts/             01_donnees.R, 02_simuler_rpu.R, 03_rapports.R, 04_donnees_app.R, tests.R
 tests/testthat/      77 tests
 ```
 
@@ -128,14 +131,18 @@ renv::restore()                     # versions figées (renv.lock)
 source("scripts/01_donnees.R")      # facultatif : données réelles déjà versionnées dans data/
 source("scripts/02_simuler_rpu.R")  # régénère l'extrait simulé (identique, graine fixe)
 source("scripts/tests.R")           # 77 tests
-source("scripts/03_rapports.R")     # 18 rapports dans site/ (environ 10 min)
+source("scripts/04_donnees_app.R") # données de l'application Shiny (app/data/)
+source("scripts/03_rapports.R")     # 18 rapports + application dans site/ (environ 10 min)
+shiny::runApp("app")                # ou l'application en local, avec un vrai serveur R
 ```
 
 La note PDF est imprimée par Chrome headless, ce qui évite d'installer LaTeX. Sous Windows, si `pandoc`
 n'est pas dans le PATH, le script utilise celui de RStudio.
 
 La CI (GitHub Actions, `r-lib/actions`) restaure renv, lance les tests et vérifie que la simulation régénérée
-est identique au fichier versionné. Elle rend ensuite les 18 rapports et les publie sur GitHub Pages.
+est identique au fichier versionné. Elle rend ensuite les 18 rapports, exporte l'application Shiny en site statique avec
+[shinylive](https://posit-dev.github.io/r-shinylive/) (R compilé en WebAssembly : l'application tourne dans le
+navigateur, sans serveur) et publie le tout sur GitHub Pages.
 
 ## Limites
 
