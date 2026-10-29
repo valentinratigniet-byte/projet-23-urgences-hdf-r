@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Urgences Hauts-de-France</title>
+<style>
+  :root { --fond: #fcfcfb; --encre: #0b0b0b; --doux: #52514e; --carte: #f3f3f1; --accent: #2a78d6; --alerte: #eda100; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --fond: #1a1a19; --encre: #f0efec; --doux: #c3c2b7; --carte: #262624; --accent: #3987e5; --alerte: #c98500; }
+  }
+  :root[data-theme="dark"] { --fond: #1a1a19; --encre: #f0efec; --doux: #c3c2b7; --carte: #262624; --accent: #3987e5; --alerte: #c98500; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--fond); color: var(--encre); line-height: 1.55; }
+  main { max-width: 920px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: 1.8em; margin: 0 0 4px; }
+  h2 { font-size: 1.15em; margin: 32px 0 10px; }
+  p.sous { color: var(--doux); margin: 0 0 20px; }
+  .avert { border-left: 4px solid var(--alerte); background: var(--carte); padding: 10px 14px; font-size: .95em; }
+  .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  a.carte { display: block; background: var(--carte); border-radius: 6px; padding: 12px 14px; color: var(--encre); text-decoration: none; border: 1px solid transparent; }
+  a.carte:hover, a.carte:focus-visible { border-color: var(--accent); }
+  a.carte b { display: block; }
+  a.carte span { color: var(--doux); font-size: .9em; }
+  footer { margin-top: 36px; color: var(--doux); font-size: .9em; }
+  footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Activité des urgences en Hauts-de-France</h1>
+  <p class="sous">Projet de portfolio en R / R Markdown : indicateurs d'activité 2017-2023, qualité des données RPU,
+    restitution aux décideurs. Rapports générés et publiés automatiquement par la CI.</p>
+
+  <div class="avert">Volumes journaliers <b>réels mais estimés</b> (DREES). Les rapports qualité reposent sur un
+    <b>extrait RPU simulé</b> : établissements et passages fictifs, les RPU réels étant confidentiels.</div>
+
+  <h2>Synthèse</h2>
+  <div class="grille">
+    <a class="carte" href="panorama.html"><b>Panorama régional</b><span>volumes, tendance, saisonnalité, épidémies</span></a>
+    <a class="carte" href="note_ars.pdf"><b>Note d'une page (PDF)</b><span>3 constats, 1 limite, 1 recommandation</span></a>
+    <a class="carte" href="note_ars.html"><b>Note d'une page (HTML)</b><span>même contenu, version web</span></a>
+  </div>
+
+  <h2>Rapports départementaux (paramètre <code>dep</code>)</h2>
+  <div class="grille">
+    <a class="carte" href="departements/02.html"><b>Aisne</b><span>02</span></a>
+    <a class="carte" href="departements/59.html"><b>Nord</b><span>59</span></a>
+    <a class="carte" href="departements/60.html"><b>Oise</b><span>60</span></a>
+    <a class="carte" href="departements/62.html"><b>Pas-de-Calais</b><span>62</span></a>
+    <a class="carte" href="departements/80.html"><b>Somme</b><span>80</span></a>
+  </div>
+
+  <h2>Qualité des données par établissement (paramètre <code>finess</code>, données simulées)</h2>
+  <div class="grille">
+    <a class="carte" href="qualite/SIM59A.html"><b>SIM59A</b><span>Nord, profil « bonne qualité »</span></a>
+    <a class="carte" href="qualite/SIM59B.html"><b>SIM59B</b><span>Nord, profil moyen</span></a>
+    <a class="carte" href="qualite/SIM59C.html"><b>SIM59C</b><span>Nord, profil « qualité faible »</span></a>
+    <a class="carte" href="qualite/SIM62A.html"><b>SIM62A</b><span>Pas-de-Calais, profil moyen</span></a>
+    <a class="carte" href="qualite/SIM62B.html"><b>SIM62B</b><span>Pas-de-Calais, jours non transmis</span></a>
+    <a class="carte" href="qualite/SIM02A.html"><b>SIM02A</b><span>Aisne, profil « bonne qualité »</span></a>
+    <a class="carte" href="qualite/SIM60A.html"><b>SIM60A</b><span>Oise, 35 % de diagnostics vides</span></a>
+    <a class="carte" href="qualite/SIM80A.html"><b>SIM80A</b><span>Somme, profil moyen</span></a>
+  </div>
+
+  <footer>Code source : <a href="https://github.com/valentinratigniet-byte/projet-23-urgences-hdf-r">github.com/valentinratigniet-byte/projet-23-urgences-hdf-r</a>
+    · Projet de portfolio, sans lien avec un organisme officiel · Sources : DREES, Santé publique France (Licence Ouverte Etalab 2.0).</footer>
+</main>
+</body>
+</html>

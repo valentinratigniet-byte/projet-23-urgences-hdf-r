@@ -14,6 +14,9 @@ rendre <- function(rmd, sortie, params = list()) {
 args <- commandArgs(trailingOnly = TRUE)   # ex. : Rscript scripts/03_rapports.R panorama
 tous <- length(args) == 0
 
+dir.create("site", showWarnings = FALSE)
+file.copy("rapports/index.html", "site/index.html", overwrite = TRUE)
+
 if (tous || "panorama" %in% args) rendre("panorama.Rmd", "panorama.html")
 if (tous || "departement" %in% args) {
   for (d in c("02", "59", "60", "62", "80")) rendre("departement.Rmd", sprintf("departements/%s.html", d), list(dep = d))
